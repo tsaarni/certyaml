@@ -1,0 +1,6 @@
+cn: server-root
+---
+cn: myserver
+sans:
+- DNS:myserver.example.com
+issuer: server-root
