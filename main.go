@@ -30,7 +30,7 @@ type Certificate struct {
 	KeyUsage       []string `yaml:"key_usages"`
 	Issuer         string
 	FileName       string `yaml:"filename"`
-	IsCA           bool   `yaml:"ca"`
+	IsCA           *bool  `yaml:"ca"`
 
 	// generated at runtime
 	RSAKey *rsa.PrivateKey
@@ -79,11 +79,12 @@ func (c *Certificate) defaults() error {
 	if c.Expiry == "" {
 		c.Expiry = "8760h" // year
 	}
-	if c.Issuer == "" {
-		c.IsCA = true
+	if c.IsCA == nil {
+		noExplicitIssuer := (c.Issuer == "")
+		c.IsCA = &noExplicitIssuer
 	}
 	if len(c.KeyUsage) == 0 {
-		if c.IsCA {
+		if *c.IsCA {
 			c.KeyUsage = []string{"CertSign", "CRLSign"}
 		} else {
 			c.KeyUsage = []string{"KeyEncipherment", "DigitalSignature"}
@@ -126,8 +127,8 @@ func (c *Certificate) Generate(destination string) error {
 		NotBefore:             notBefore.UTC(),
 		NotAfter:              notBefore.UTC().Add(expiry),
 		KeyUsage:              keyUsage,
-		BasicConstraintsValid: c.IsCA,
-		IsCA:                  c.IsCA,
+		BasicConstraintsValid: *c.IsCA,
+		IsCA:                  *c.IsCA,
 	}
 
 	for _, san := range c.SubjectAltName {
