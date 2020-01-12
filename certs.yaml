@@ -1,6 +1,17 @@
-cn: server-root
+cn: server-root-ca
+---
+cn: intermediate-ca
+issuer: server-root-ca
+ca: true
 ---
 cn: myserver
+issuer: intermediate-ca
 sans:
 - DNS:myserver.example.com
-issuer: server-root
+- DNS:foo
+---
+cn: selfsigned-server
+ca: false
+key_usage:
+- KeyEncipherment
+- DigitalSignature
