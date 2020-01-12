@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -23,7 +24,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Certificate ...
+// Certificate stores the required parameters for creating certificate and key
 type Certificate struct {
 	CommonName     string   `yaml:"cn"`
 	SubjectAltName []string `yaml:"sans"`
@@ -31,26 +32,27 @@ type Certificate struct {
 	Expiry         string
 	KeyUsage       []string `yaml:"key_usages"`
 	Issuer         string
-	FileName       string     `yaml:"filename"`
+	Filename       string     `yaml:"filename"`
 	IsCA           *bool      `yaml:"ca"`
 	NotBefore      *time.Time `yaml:"not_before"`
 	NotAfter       *time.Time `yaml:"not_after"`
 
-	// generated at runtime, not from yaml
+	// generated at runtime, not read from yaml
 	rsaKey *rsa.PrivateKey `yaml:"-"`
 	cert   []byte          `yaml:"-"`
 }
 
-// destination directory for writing out files
+// destination directory for writing the created files
 var destination string
 
-// state stores the hash of the Certificate structs, in order to skip re-generating unless manifest changes.
-// it is persistently stored in state.yaml between executions
+// state stores the hash of the Certificate structs, in order to not re-create them unless manifest changed.
+// state is persistently stored in state.yaml between executions
 var state = make(map[string]string)
 
-// allCerts contains the generated certificates, used when issuing
+// allCerts contains the generated certificates. The list is needed at runtime during signing the end-entity certificates
 var allCerts = make(map[string]Certificate)
 
+// getKeyUsage converts key usage string to x509.KeyUsage
 func getKeyUsage(keyUsage []string) (x509.KeyUsage, error) {
 	var result x509.KeyUsage
 
@@ -81,6 +83,7 @@ func getKeyUsage(keyUsage []string) (x509.KeyUsage, error) {
 	return result, nil
 }
 
+// defaults sets the default values to Certificate
 func (c *Certificate) defaults() error {
 	if c.CommonName == "" {
 		return errors.New("Mandatory field cn: missing")
@@ -102,14 +105,16 @@ func (c *Certificate) defaults() error {
 			c.KeyUsage = []string{"KeyEncipherment", "DigitalSignature"}
 		}
 	}
-	if c.FileName == "" {
-		c.FileName = c.CommonName
+	if c.Filename == "" {
+		c.Filename = c.CommonName
 	}
 
 	return nil
 }
 
-// Generate ...
+// Generate creates and saves a certificate and key, or optionally loads previously generated ones.
+// It compares the Certificate struct content to previously stored state, in order to create new
+// certificate and key only when needed.
 func (c *Certificate) Generate() error {
 	err := c.defaults()
 	if err != nil {
@@ -121,9 +126,9 @@ func (c *Certificate) Generate() error {
 
 	// find out if manifest has been changed since certificate and key was created
 	hash := c.hash()
-	if state[c.FileName] == hash {
-		allCerts[c.FileName] = *c
-		fmt.Printf("No changes in manifest: skipping %s\n", c.FileName)
+	if state[c.Filename] == hash {
+		allCerts[c.Filename] = *c
+		fmt.Printf("No changes in manifest: skipping %s\n", c.Filename)
 		return nil
 	}
 
@@ -138,20 +143,20 @@ func (c *Certificate) Generate() error {
 	}
 
 	var notBefore, notAfter time.Time
-	if c.NotBefore == nil {
-		notBefore = time.Now()
-	} else {
+	if c.NotBefore != nil {
 		notBefore = *c.NotBefore
+	} else {
+		notBefore = time.Now()
 	}
 
-	if c.NotAfter == nil {
+	if c.NotAfter != nil {
+		notAfter = *c.NotAfter
+	} else {
 		expiry, err := time.ParseDuration(c.Expiry)
 		if err != nil {
 			return err
 		}
 		notAfter = notBefore.UTC().Add(expiry)
-	} else {
-		notAfter = *c.NotAfter
 	}
 
 	template := &x509.Certificate{
@@ -208,18 +213,19 @@ func (c *Certificate) Generate() error {
 		return err
 	}
 
-	allCerts[c.FileName] = *c
-	state[c.FileName] = c.hash()
+	allCerts[c.Filename] = *c
+	state[c.Filename] = c.hash()
 
 	return nil
 }
 
+// save writes the certificate and key into PEM files
 func (c *Certificate) save() error {
-	certFileName := path.Join(destination, c.FileName+".pem")
-	keyFileName := path.Join(destination, c.FileName+"-key.pem")
-	fmt.Printf("Writing: %s, %s\n", certFileName, keyFileName)
+	certFilename := path.Join(destination, c.Filename+".pem")
+	keyFilename := path.Join(destination, c.Filename+"-key.pem")
+	fmt.Printf("Writing: %s, %s\n", certFilename, keyFilename)
 
-	cf, err := os.Create(certFileName)
+	cf, err := os.Create(certFilename)
 	if err != nil {
 		return err
 	}
@@ -230,7 +236,7 @@ func (c *Certificate) save() error {
 		Bytes: c.cert,
 	})
 
-	kf, err := os.Create(keyFileName)
+	kf, err := os.Create(keyFilename)
 	if err != nil {
 		return err
 	}
@@ -244,27 +250,28 @@ func (c *Certificate) save() error {
 	return nil
 }
 
+// load reads the certificate and key from PEM files
 func (c *Certificate) load() error {
-	certFileName := path.Join(destination, c.FileName+".pem")
-	keyFileName := path.Join(destination, c.FileName+"-key.pem")
+	certFilename := path.Join(destination, c.Filename+".pem")
+	keyFilename := path.Join(destination, c.Filename+"-key.pem")
 
-	buf, err := ioutil.ReadFile(certFileName)
+	buf, err := ioutil.ReadFile(certFilename)
 	if err != nil {
 		return err
 	}
 	decoded, _ := pem.Decode(buf)
 	if decoded == nil || decoded.Type != "CERTIFICATE" {
-		return fmt.Errorf("Error while decoding %s", certFileName)
+		return fmt.Errorf("Error while decoding %s", certFilename)
 	}
 	c.cert = decoded.Bytes
 
-	buf, err = ioutil.ReadFile(keyFileName)
+	buf, err = ioutil.ReadFile(keyFilename)
 	if err != nil {
 		return err
 	}
 	decoded, _ = pem.Decode(buf)
 	if decoded == nil || decoded.Type != "RSA PRIVATE KEY" {
-		return fmt.Errorf("Error while decoding %s", keyFileName)
+		return fmt.Errorf("Error while decoding %s", keyFilename)
 	}
 	c.rsaKey, err = x509.ParsePKCS1PrivateKey(decoded.Bytes)
 	if err != nil {
@@ -274,6 +281,7 @@ func (c *Certificate) load() error {
 	return nil
 }
 
+// hash calculates the hash over the structure attributes
 func (c *Certificate) hash() string {
 	return fmt.Sprintf("%x", structhash.Sha1(c, 1))
 }
@@ -291,32 +299,39 @@ func main() {
 	flag.StringVar(&destination, "destination", "", "Destination directory where to create the certificates and keys")
 	flag.Parse()
 
-	manifest := "certs.yaml"
+	manifestFilename := "certs.yaml"
 	if flag.Arg(0) != "" {
-		manifest = flag.Arg(0)
+		manifestFilename = flag.Arg(0)
 	}
+	stateFilename := strings.TrimSuffix(manifestFilename, filepath.Ext(manifestFilename))
+	stateFilename = path.Join(destination, path.Base(stateFilename)+".state")
 
-	f, err := os.Open(manifest)
+	fmt.Printf("Loading manifest: %s\n", manifestFilename)
+	f, err := os.Open(manifestFilename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Cannot read certificate manifest: %s\n", err)
 		os.Exit(1)
 	}
 	defer f.Close()
 
-	data, _ := ioutil.ReadFile(path.Join(destination, "state.yaml"))
+	// load previously stored state of created certificates and keys.
+	// state is used to determine when files need to be re-created
+	fmt.Printf("Reading state: %s\n", stateFilename)
+	data, _ := ioutil.ReadFile(stateFilename)
 	err = yaml.Unmarshal(data, &state)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error while reading state.yaml: %s", err)
 		os.Exit(1)
 	}
 
+	// create certificates and keys
 	dec := yaml.NewDecoder(f)
 	for {
 		var c Certificate
 		if err := dec.Decode(&c); err == io.EOF {
 			break
 		} else if err != nil {
-			fmt.Fprintf(os.Stderr, "Error while decoding %s: %s\n", manifest, err)
+			fmt.Fprintf(os.Stderr, "Error while decoding %s: %s\n", manifestFilename, err)
 			os.Exit(1)
 		}
 
@@ -327,8 +342,10 @@ func main() {
 		}
 	}
 
+	// store state back to disk
+	fmt.Printf("Writing state: %s\n", stateFilename)
 	stateYaml, err := yaml.Marshal(state)
-	err = ioutil.WriteFile(path.Join(destination, "state.yaml"), stateYaml, 0644)
+	err = ioutil.WriteFile(stateFilename, stateYaml, 0644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error while writing state: %s\n", err)
 		os.Exit(1)
