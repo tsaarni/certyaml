@@ -15,3 +15,8 @@ ca: false
 key_usage:
 - KeyEncipherment
 - DigitalSignature
+---
+cn: fixedtime
+issuer: intermediate-ca
+not_before: 2020-01-01T09:00:00Z
+not_after: 2020-02-01T10:10:10Z

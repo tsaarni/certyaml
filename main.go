@@ -31,8 +31,10 @@ type Certificate struct {
 	Expiry         string
 	KeyUsage       []string `yaml:"key_usages"`
 	Issuer         string
-	FileName       string `yaml:"filename"`
-	IsCA           *bool  `yaml:"ca"`
+	FileName       string     `yaml:"filename"`
+	IsCA           *bool      `yaml:"ca"`
+	NotBefore      *time.Time `yaml:"not_before"`
+	NotAfter       *time.Time `yaml:"not_after"`
 
 	// generated at runtime, not from yaml
 	rsaKey *rsa.PrivateKey `yaml:"-"`
@@ -86,7 +88,7 @@ func (c *Certificate) defaults() error {
 	if c.KeySize == 0 {
 		c.KeySize = 2048
 	}
-	if c.Expiry == "" {
+	if c.Expiry == "" && c.NotAfter == nil {
 		c.Expiry = "8760h" // year
 	}
 	if c.IsCA == nil {
@@ -135,19 +137,30 @@ func (c *Certificate) Generate() error {
 		return err
 	}
 
-	notBefore := time.Now()
-	expiry, err := time.ParseDuration(c.Expiry)
-	if err != nil {
-		return err
+	var notBefore, notAfter time.Time
+	if c.NotBefore == nil {
+		notBefore = time.Now()
+	} else {
+		notBefore = *c.NotBefore
+	}
+
+	if c.NotAfter == nil {
+		expiry, err := time.ParseDuration(c.Expiry)
+		if err != nil {
+			return err
+		}
+		notAfter = notBefore.UTC().Add(expiry)
+	} else {
+		notAfter = *c.NotAfter
 	}
 
 	template := &x509.Certificate{
-		SerialNumber: big.NewInt(int64(notBefore.Nanosecond())),
+		SerialNumber: big.NewInt(time.Now().UnixNano()),
 		Subject: pkix.Name{
 			CommonName: c.CommonName,
 		},
-		NotBefore:             notBefore.UTC(),
-		NotAfter:              notBefore.UTC().Add(expiry),
+		NotBefore:             notBefore,
+		NotAfter:              notAfter,
 		KeyUsage:              keyUsage,
 		BasicConstraintsValid: *c.IsCA,
 		IsCA:                  *c.IsCA,
