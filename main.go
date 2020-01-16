@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
 	"flag"
@@ -21,15 +20,16 @@ import (
 	"time"
 
 	"github.com/cnf/structhash"
+	"github.com/tsaarni/x500dn"
 	"gopkg.in/yaml.v3"
 )
 
 // Certificate stores the required parameters for creating certificate and key
 type Certificate struct {
-	CommonName     string   `yaml:"cn"`
+	Subject        string   `yaml:"subject"`
 	SubjectAltName []string `yaml:"sans"`
 	KeySize        int      `yaml:"key_size"`
-	Expiry         string
+	Expires        string
 	KeyUsage       []string `yaml:"key_usages"`
 	Issuer         string
 	Filename       string     `yaml:"filename"`
@@ -85,19 +85,32 @@ func getKeyUsage(keyUsage []string) (x509.KeyUsage, error) {
 
 // defaults sets the default values to Certificate
 func (c *Certificate) defaults() error {
-	if c.CommonName == "" {
-		return errors.New("Mandatory field cn: missing")
+	if c.Subject == "" {
+		return errors.New("Mandatory field subject: missing")
 	}
+
+	name, err := x500dn.ParseDN(c.Subject)
+	if err != nil {
+		return err
+	}
+
+	if name.CommonName == "" {
+		return errors.New("Subject must contain CN")
+	}
+
 	if c.KeySize == 0 {
 		c.KeySize = 2048
 	}
-	if c.Expiry == "" && c.NotAfter == nil {
-		c.Expiry = "8760h" // year
+
+	if c.Expires == "" && c.NotAfter == nil {
+		c.Expires = "8760h" // year
 	}
+
 	if c.IsCA == nil {
 		noExplicitIssuer := (c.Issuer == "")
 		c.IsCA = &noExplicitIssuer
 	}
+
 	if len(c.KeyUsage) == 0 {
 		if *c.IsCA {
 			c.KeyUsage = []string{"CertSign", "CRLSign"}
@@ -105,8 +118,9 @@ func (c *Certificate) defaults() error {
 			c.KeyUsage = []string{"KeyEncipherment", "DigitalSignature"}
 		}
 	}
+
 	if c.Filename == "" {
-		c.Filename = c.CommonName
+		c.Filename = name.CommonName
 	}
 
 	return nil
@@ -126,8 +140,8 @@ func (c *Certificate) Generate() error {
 
 	// find out if manifest has been changed since certificate and key was created
 	hash := c.hash()
-	if state[c.Filename] == hash {
-		allCerts[c.Filename] = *c
+	if state[c.Subject] == hash {
+		allCerts[c.Subject] = *c
 		fmt.Printf("No changes in manifest: skipping %s\n", c.Filename)
 		return nil
 	}
@@ -152,18 +166,18 @@ func (c *Certificate) Generate() error {
 	if c.NotAfter != nil {
 		notAfter = *c.NotAfter
 	} else {
-		expiry, err := time.ParseDuration(c.Expiry)
+		expiry, err := time.ParseDuration(c.Expires)
 		if err != nil {
 			return err
 		}
 		notAfter = notBefore.UTC().Add(expiry)
 	}
 
+	name, _ := x500dn.ParseDN(c.Subject)
+
 	template := &x509.Certificate{
-		SerialNumber: big.NewInt(time.Now().UnixNano()),
-		Subject: pkix.Name{
-			CommonName: c.CommonName,
-		},
+		SerialNumber:          big.NewInt(time.Now().UnixNano()),
+		Subject:               *name,
 		NotBefore:             notBefore,
 		NotAfter:              notAfter,
 		KeyUsage:              keyUsage,
@@ -213,8 +227,8 @@ func (c *Certificate) Generate() error {
 		return err
 	}
 
-	allCerts[c.Filename] = *c
-	state[c.Filename] = c.hash()
+	allCerts[c.Subject] = *c
+	state[c.Subject] = c.hash()
 
 	return nil
 }
@@ -223,7 +237,7 @@ func (c *Certificate) Generate() error {
 func (c *Certificate) save() error {
 	certFilename := path.Join(destination, c.Filename+".pem")
 	keyFilename := path.Join(destination, c.Filename+"-key.pem")
-	fmt.Printf("Writing: %s, %s\n", certFilename, keyFilename)
+	fmt.Printf("Writing: %s %s\n", certFilename, keyFilename)
 
 	cf, err := os.Create(certFilename)
 	if err != nil {
