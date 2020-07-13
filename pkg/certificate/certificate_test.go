@@ -1,4 +1,4 @@
-// Copyright 2020 tero.saarni@gmail.com
+// Copyright 2020 Tero Saarni
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@ package certificate
 
 import (
 	"crypto/x509"
+	"io/ioutil"
 	"net"
 	"net/url"
+	"os"
 	"testing"
 	"time"
 
@@ -114,19 +116,38 @@ func TestIssuer(t *testing.T) {
 	assert.Equal(t, "EndEntity", got.Subject.CommonName)
 	assert.Equal(t, "Joe", got.Issuer.CommonName)
 	assert.Equal(t, false, got.IsCA)
-
 }
 
 func TestFilename(t *testing.T) {
+	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
+	assert.Nil(t, err)
+	defer os.RemoveAll(dir)
+
 	got := Certificate{Subject: "CN=Joe"}
-	err := got.Generate(nil)
+	err = got.Generate(nil)
 	assert.Nil(t, err)
 	assert.Equal(t, "Joe", got.Filename)
+	err = got.Save(dir)
+	assert.Nil(t, err)
+	input := Certificate{Subject: "CN=dummy", Filename: "Joe"}
+	err = input.Load(dir)
+	assert.Nil(t, err)
+	cert, err := x509.ParseCertificate(input.cert)
+	assert.Nil(t, err)
+	assert.Equal(t, "Joe", cert.Subject.CommonName)
 
-	got = Certificate{Subject: "CN=Joe", Filename: "mycert"}
+	got = Certificate{Subject: "CN=Jane", Filename: "mycert"}
 	err = got.Generate(nil)
 	assert.Nil(t, err)
 	assert.Equal(t, "mycert", got.Filename)
+	err = got.Save(dir)
+	assert.Nil(t, err)
+	input = Certificate{Subject: "CN=dummy", Filename: "mycert"}
+	err = input.Load(dir)
+	assert.Nil(t, err)
+	cert, err = x509.ParseCertificate(input.cert)
+	assert.Nil(t, err)
+	assert.Equal(t, "Jane", cert.Subject.CommonName)
 }
 
 func TestIsCa(t *testing.T) {
@@ -176,4 +197,46 @@ func TestNotBeforeAndNotAfter(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, wantNotBefore, got.NotBefore)
 	assert.Equal(t, wantNotAfter, got.NotAfter)
+}
+
+func TestInvalidSubject(t *testing.T) {
+	var input Certificate
+	err := input.Generate(nil)
+	assert.NotNil(t, err)
+
+	input = Certificate{Subject: "Foo=Bar"}
+	err = input.Generate(nil)
+	assert.NotNil(t, err)
+}
+
+func TestInvalidSubjectAltName(t *testing.T) {
+	input := Certificate{Subject: "CN=Joe", SubjectAltName: []string{"EMAIL:user@example.com"}}
+	err := input.Generate(nil)
+	assert.NotNil(t, err)
+
+	input = Certificate{Subject: "CN=Joe", SubjectAltName: []string{"URL:"}}
+	err = input.Generate(nil)
+	assert.NotNil(t, err)
+
+	input = Certificate{Subject: "CN=Joe", SubjectAltName: []string{"IP:999.999.999.999"}}
+	err = input.Generate(nil)
+	assert.NotNil(t, err)
+}
+
+func TestInvalidKeysize(t *testing.T) {
+	input := Certificate{Subject: "CN=Joe", KeySize: 1}
+	err := input.Generate(nil)
+	assert.NotNil(t, err)
+}
+
+func TestInvalidExpires(t *testing.T) {
+	input := Certificate{Subject: "CN=Joe", Expires: "1not-an-unit"}
+	err := input.Generate(nil)
+	assert.NotNil(t, err)
+}
+
+func TestInvalidKeyUsage(t *testing.T) {
+	input := Certificate{Subject: "CN=Joe", KeyUsage: []string{"DigitalSignature", "invalid-key-usage"}}
+	err := input.Generate(nil)
+	assert.NotNil(t, err)
 }

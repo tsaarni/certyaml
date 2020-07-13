@@ -1,4 +1,4 @@
-// Copyright 2020 tero.saarni@gmail.com
+// Copyright 2020 Tero Saarni
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -185,7 +185,7 @@ func (c *Certificate) Generate(ca *Certificate) error {
 		case strings.HasPrefix(san, "IP:"):
 			ip := net.ParseIP(strings.TrimPrefix(san, "IP:"))
 			if ip == nil {
-				return err
+				return fmt.Errorf("Invalid IP address: %s", strings.TrimPrefix(san, "IP:"))
 			}
 			template.IPAddresses = append(template.IPAddresses, ip)
 		default:
@@ -205,7 +205,7 @@ func (c *Certificate) Generate(ca *Certificate) error {
 
 	c.cert, err = x509.CreateCertificate(rand.Reader, template, issuerCert, &c.rsaKey.PublicKey, issuerKey)
 
-	return nil
+	return err
 }
 
 // Save writes the certificate and key into PEM files
@@ -241,6 +241,11 @@ func (c *Certificate) Save(dstdir string) error {
 
 // Load reads the certificate and key from PEM files
 func (c *Certificate) Load(srcdir string) error {
+	err := c.defaults()
+	if err != nil {
+		return err
+	}
+
 	certFilename := path.Join(srcdir, c.Filename+".pem")
 	keyFilename := path.Join(srcdir, c.Filename+"-key.pem")
 
