@@ -55,31 +55,26 @@ type Certificate struct {
 // getKeyUsage converts key usage string representation to x509.KeyUsage
 func getKeyUsage(keyUsage []string) (x509.KeyUsage, error) {
 	var result x509.KeyUsage
+	var usages = map[string]x509.KeyUsage{
+		"DigitalSignature":  x509.KeyUsageDigitalSignature,
+		"ContentCommitment": x509.KeyUsageContentCommitment,
+		"KeyEncipherment":   x509.KeyUsageKeyEncipherment,
+		"DataEncipherment":  x509.KeyUsageDataEncipherment,
+		"KeyAgreement":      x509.KeyUsageKeyAgreement,
+		"CertSign":          x509.KeyUsageCertSign,
+		"CRLSign":           x509.KeyUsageCRLSign,
+		"EncipherOnly":      x509.KeyUsageEncipherOnly,
+		"DecipherOnly":      x509.KeyUsageDecipherOnly,
+	}
 
 	for _, usage := range keyUsage {
-		switch usage {
-		case "DigitalSignature":
-			result |= x509.KeyUsageDigitalSignature
-		case "ContentCommitment":
-			result |= x509.KeyUsageContentCommitment
-		case "KeyEncipherment":
-			result |= x509.KeyUsageKeyEncipherment
-		case "DataEncipherment":
-			result |= x509.KeyUsageDataEncipherment
-		case "KeyAgreement":
-			result |= x509.KeyUsageKeyAgreement
-		case "CertSign":
-			result |= x509.KeyUsageCertSign
-		case "CRLSign":
-			result |= x509.KeyUsageCRLSign
-		case "EncipherOnly":
-			result |= x509.KeyUsageEncipherOnly
-		case "DecipherOnly":
-			result |= x509.KeyUsageDecipherOnly
-		default:
-			return result, fmt.Errorf("Invalid key usage %s", keyUsage)
+		ku, ok := usages[usage]
+		if !ok {
+			return result, fmt.Errorf("Invalid key usage %s", usage)
 		}
+		result |= ku
 	}
+
 	return result, nil
 }
 

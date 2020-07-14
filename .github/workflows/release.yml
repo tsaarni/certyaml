@@ -1,0 +1,72 @@
+name: Create release and upload artifacts
+
+on:
+  push:
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+jobs:
+
+  build:
+    name: Build release artifacts, create release and upload artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.14
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Get dependencies
+        run: go get -v -t -d ./...
+
+      - name: Build
+        run: |
+          GOOS=linux   GOARCH=amd64 go build -v -o certyaml     . && tar zcvf certyaml-linux-amd64.tar.gz  certyaml && rm certyaml
+          GOOS=darwin  GOARCH=amd64 go build -v -o certyaml     . && tar zcvf certyaml-darwin-amd64.tar.gz certyaml && rm certyaml
+          GOOS=windows GOARCH=amd64 go build -v -o certyaml.exe . && zip      certyaml-windows-amd64.zip   certyaml.exe && rm certyaml.exe
+
+      # https://github.com/actions/create-release
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      # https://github.com/actions/upload-release-asset
+      - name: Upload linux binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: certyaml-linux-amd64.tar.gz
+          asset_name: certyaml-linux-amd64.tar.gz
+          asset_content_type: application/octet-stream
+
+      - name: Upload macos binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: certyaml-darwin-amd64.tar.gz
+          asset_name: certyaml-darwin-amd64.tar.gz
+          asset_content_type: application/octet-stream
+
+      - name: Upload windows binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: certyaml-windows-amd64.zip
+          asset_name: certyaml-windows-amd64.zip
+          asset_content_type: application/octet-stream

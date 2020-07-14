@@ -12,6 +12,22 @@ It is similiar to `openssl` or `cfssl` which can also be used for issuing certif
 Certyaml is targeted for developers who need to set up a private PKI for test environments.
 It cannot be used for production environments where publicly trusted certificates are needed.
 
+## Usage
+
+```
+Usage: certyaml [-d destination] [certs.yaml]
+
+Creates certificates and keys according to manifest file in YAML format.
+By default it reads `certs.yaml` as a manifest file and creates files
+in current directory.
+
+  -d string
+        Short for --destination
+  -destination string
+        Destination directory where to create the certificates and keys
+```
+
+
 ## Installing
 
 **Release builds**
@@ -23,7 +39,7 @@ Release builds are available for download in [releases page](https://github.com/
 Go compiler is required to build `certyaml` binary
 
 ```bash
-GO111MODULE=on go get github.com/tsaarni/certyaml@v0.1.0
+GO111MODULE=on go get github.com/tsaarni/certyaml@v0.2.0
 ```
 
 The executable will be stored in the go path, by default `~/go/bin/certyaml`.
@@ -73,7 +89,7 @@ EOF
 Generate the certificates
 
 ```console
-$ ~/go/bin/certyaml certs.yaml
+$ certyaml
 Loading manifest: certs.yaml
 Reading state: certs.state
 Writing: server-root-ca.pem server-root-ca-key.pem
@@ -113,7 +129,7 @@ Only changed or missing certificates will be regenerated.
 
 ```console
 $ rm myserver*
-$ ~/go/bin/certyaml certs.yaml
+$ certyaml
 Loading manifest: certs.yaml
 Reading state: certs.state
 No changes in manifest: skipping server-root-ca
@@ -132,13 +148,13 @@ Writing state: certs.state
 
 | tag | description | examples |
 | --- | ----------- | -------- |
-| subject | Distringuished name for the certificate. | `CN=Joe` |
+| subject | Distinguished name for the certificate. `subject` is the only mandatory field. | `CN=Joe` |
 | sans | List of values for x509 Subject Alternative Name extension. | `DNS:www.example.com`, `IP:1.2.3.4`, `URI:https://www.example.com` |
-| key_size | RSA key size. | 4096 |
-| expires | Certificate NotAfter field is calculated by adding duration defined in `expires` to current time. | `1s`, `10m`, `1h` |
-| key_usages | List of values for x509 key usage extension. | `DigitalSignature`, `ContentCommitment`, `KeyEncipherment`, `DataEncipherment`, `KeyAgreement`, `CertSign`, `CRLSign`, `EncipherOnly`, `DecipherOnly` |
-| issuer | Distringuished name of the issuer. Issuer must be declared as a certificate in the manifest file before referring to it as issuer. | `CN=myca` |
+| key_size | RSA key size. Default value is 2048 if `key_size` is not defined. | 4096 |
+| expires | Certificate NotAfter field is calculated by adding duration defined in `expires` to current time. Default value is 8760h (one year) if `expires` is not defined. `not_after` takes precedence over `expires`. | `1s`, `10m`, `1h` |
+| key_usages | List of values for x509 key usage extension. If `key_usages` is not defined, `CertSign` and `CRLSign` are set for CA certificates, `KeyEncipherment` and `DigitalSignature` are set for end-entity certificates. | `DigitalSignature`, `ContentCommitment`, `KeyEncipherment`, `DataEncipherment`, `KeyAgreement`, `CertSign`, `CRLSign`, `EncipherOnly`, `DecipherOnly` |
+| issuer | Distinguished name of the issuer. Issuer must be declared as a certificate in the manifest file before referring to it as issuer. Self-signed certificate is generated if `issuer` is not defined. | `CN=myca` |
 | filename | The basename of the generated certificate and private key files. The files created to destination directory will be [filename].pem and [filename]-key.pem will. If `filename` is not defined, CN field value from subject will be used as filename. | `clientcert` |
-| ca | Set certificate is / is not CA (boolean) | `true` or  `false` |
+| ca | Set certificate is / is not CA. If `ca` is not defined, `true` is set by default for self-signed certificates. | `true` or  `false` |
 | not_before | Certificate is not valid before this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)) | `2020-01-01T09:00:00Z` |
 | not_after | Certificate is not valid after this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)) | `2020-01-01T09:00:00Z` |
