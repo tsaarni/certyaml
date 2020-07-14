@@ -1,8 +1,24 @@
 # certyaml
 
-Declarative way to create certificates for test environments.
+Declarative way to create x509 certificates for test environments.
 
-## Building 
+![](https://github.com/tsaarni/certyaml/workflows/unit-tests/badge.svg)
+
+## Description
+
+Certyaml is a command line tool for issuing certificates.
+It is similiar to `openssl` or `cfssl` which can also be used for issuing certificates, but certyaml provides simpler way to define complete PKI hierarchies with a compact [YAML syntax](#YAML-syntax).
+
+Certyaml is targeted for developers who need to set up a private PKI for test environments.
+It cannot be used for production environments where publicly trusted certificates are needed.
+
+## Installing
+
+**Release builds**
+
+Release builds are available for download in [releases page](https://github.com/tsaarni/certyaml/releases).
+
+**Compiling from source code**
 
 Go compiler is required to build `certyaml` binary
 
@@ -13,11 +29,9 @@ GO111MODULE=on go get github.com/tsaarni/certyaml@v0.1.0
 The executable will be stored in the go path, by default `~/go/bin/certyaml`.
 
 
-## Using
+## Using certyaml
 
-
-Create a manifest file which describes the wanted PKI hierarchy and end-entity certificates
-
+Create a YAML manifest file which describes the wanted PKI hierarchy and end-entity certificates
 
 ```console
 $ cat certs.yaml <<EOF
@@ -112,3 +126,19 @@ No changes in manifest: skipping client-root-ca
 No changes in manifest: skipping clientcert
 Writing state: certs.state
 ```
+
+
+## YAML syntax
+
+| tag | description | examples |
+| --- | ----------- | -------- |
+| subject | Distringuished name for the certificate. | `CN=Joe` |
+| subject_alt_name | List of values for x509 Subject Alternative Name extension. | `DNS:www.example.com`, `IP:1.2.3.4`, `URI:https://www.example.com` |
+| key_size | RSA key size. | 4096 |
+| expires | Certificate NotAfter field is calculated by adding duration defined in `expires` to current time. | `1s`, `10m`, `1h` |
+| key_usage | List of values for x509 key usage extension. | `DigitalSignature`, `ContentCommitment`, `KeyEncipherment`, `DataEncipherment`, `KeyAgreement`, `CertSign`, `CRLSign`, `EncipherOnly`, `DecipherOnly` |
+| issuer | Distringuished name of the issuer. Issuer must be declared as a certificate in the manifest file before referring to it as issuer. | `CN=myca` |
+| filename | The basename of the generated certificate and private key files. The files created to destination directory will be [filename].pem and [filename]-key.pem will. If `filename` is not defined, CN field value from subject will be used as filename. | `clientcert` |
+| is_ca | Set certificate is / is not CA (boolean) | `true` or  `false` |
+| not_before | Certificate is not valid before this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)) | `2020-01-01T09:00:00Z` |
+| not_after | Certificate is not valid after this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)) | `2020-01-01T09:00:00Z` |
