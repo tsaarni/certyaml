@@ -1,0 +1,32 @@
+subject: cn=server-root-ca
+---
+subject: cn=intermediate-ca
+issuer: cn=server-root-ca
+ca: true
+---
+subject: cn=myserver
+issuer: cn=intermediate-ca
+sans:
+- DNS:myserver.example.com
+- DNS:foo
+---
+subject: cn=selfsigned-server
+ca: false
+key_usage:
+- KeyEncipherment
+- DigitalSignature
+---
+subject: cn=fixedtime
+issuer: cn=intermediate-ca
+not_before: 2020-01-01T09:00:00Z
+not_after: 2020-02-01T10:10:10Z
+---
+subject: cn=shortlived
+issuer: cn=intermediate-ca
+expires: 1m
+---
+subject: cn=client-root-ca
+---
+subject: CN=John Doe,OU=People,O=Company
+filename: clientcert
+issuer: cn=client-root-ca
