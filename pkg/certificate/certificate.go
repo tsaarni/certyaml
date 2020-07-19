@@ -15,6 +15,9 @@
 package certificate
 
 import (
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -38,6 +41,7 @@ import (
 type Certificate struct {
 	Subject        string   `yaml:"subject"`
 	SubjectAltName []string `yaml:"sans"`
+	KeyType        string   `yaml:"key_type"`
 	KeySize        int      `yaml:"key_size"`
 	Expires        string
 	KeyUsage       []string `yaml:"key_usages"`
@@ -48,8 +52,8 @@ type Certificate struct {
 	NotAfter       *time.Time `yaml:"not_after"`
 
 	// generated at runtime, not read from yaml
-	rsaKey *rsa.PrivateKey `yaml:"-"`
-	cert   []byte          `yaml:"-"`
+	Key  crypto.Signer `yaml:"-"`
+	Cert []byte        `yaml:"-"`
 }
 
 // getKeyUsage converts key usage string representation to x509.KeyUsage
@@ -78,6 +82,23 @@ func getKeyUsage(keyUsage []string) (x509.KeyUsage, error) {
 	return result, nil
 }
 
+const (
+	ecKey  string = "EC"
+	rsaKey        = "RSA"
+)
+
+func normalizeKeyType(keyType string) (string, error) {
+	if keyType == "" {
+		return ecKey, nil
+	} else if strings.EqualFold(keyType, "EC") {
+		return ecKey, nil
+	} else if strings.EqualFold(keyType, "RSA") {
+		return rsaKey, nil
+	} else {
+		return "", fmt.Errorf("Invalid key type %s", keyType)
+	}
+}
+
 // Defaults sets the default values to Certificate fields that may be overwritten by the fields in the certificate manifest file
 func (c *Certificate) defaults() error {
 	if c.Subject == "" {
@@ -93,8 +114,17 @@ func (c *Certificate) defaults() error {
 		return errors.New("Subject must contain CN")
 	}
 
+	c.KeyType, err = normalizeKeyType(c.KeyType)
+	if err != nil {
+		return err
+	}
+
 	if c.KeySize == 0 {
-		c.KeySize = 2048
+		if c.KeyType == ecKey {
+			c.KeySize = 256
+		} else if c.KeyType == rsaKey {
+			c.KeySize = 2048
+		}
 	}
 
 	if c.Expires == "" && c.NotAfter == nil {
@@ -133,7 +163,23 @@ func (c *Certificate) Generate(ca *Certificate) error {
 		return err
 	}
 
-	c.rsaKey, err = rsa.GenerateKey(rand.Reader, c.KeySize)
+	if c.KeyType == ecKey {
+		var curve elliptic.Curve
+		switch c.KeySize {
+		case 256:
+			curve = elliptic.P256()
+		case 384:
+			curve = elliptic.P384()
+		case 521:
+			curve = elliptic.P521()
+		default:
+			return fmt.Errorf("Invalid EC key size: %d (valid: 256, 384, 521)", c.KeySize)
+		}
+		c.Key, err = ecdsa.GenerateKey(curve, rand.Reader)
+	} else if c.KeyType == rsaKey {
+		c.Key, err = rsa.GenerateKey(rand.Reader, c.KeySize)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -189,16 +235,17 @@ func (c *Certificate) Generate(ca *Certificate) error {
 	}
 
 	var issuerCert *x509.Certificate
-	var issuerKey interface{}
+	var issuerKey crypto.Signer
 	if ca != nil {
-		issuerCert, err = x509.ParseCertificate(ca.cert)
-		issuerKey = ca.rsaKey
+		issuerCert, err = x509.ParseCertificate(ca.Cert)
+		issuerKey = ca.Key
 	} else {
+		// create self-signed certificate
 		issuerCert = template
-		issuerKey = c.rsaKey
+		issuerKey = c.Key
 	}
 
-	c.cert, err = x509.CreateCertificate(rand.Reader, template, issuerCert, &c.rsaKey.PublicKey, issuerKey)
+	c.Cert, err = x509.CreateCertificate(rand.Reader, template, issuerCert, c.Key.Public(), issuerKey)
 
 	return err
 }
@@ -217,7 +264,7 @@ func (c *Certificate) Save(dstdir string) error {
 
 	pem.Encode(cf, &pem.Block{
 		Type:  "CERTIFICATE",
-		Bytes: c.cert,
+		Bytes: c.Cert,
 	})
 
 	kf, err := os.Create(keyFilename)
@@ -226,9 +273,14 @@ func (c *Certificate) Save(dstdir string) error {
 	}
 	defer kf.Close()
 
+	bytes, err := x509.MarshalPKCS8PrivateKey(c.Key)
+	if err != nil {
+		return err
+	}
+
 	pem.Encode(kf, &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(c.rsaKey),
+		Type:  "PRIVATE KEY",
+		Bytes: bytes,
 	})
 
 	return nil
@@ -252,20 +304,22 @@ func (c *Certificate) Load(srcdir string) error {
 	if decoded == nil || decoded.Type != "CERTIFICATE" {
 		return fmt.Errorf("Error while decoding %s", certFilename)
 	}
-	c.cert = decoded.Bytes
+	c.Cert = decoded.Bytes
 
 	buf, err = ioutil.ReadFile(keyFilename)
 	if err != nil {
 		return err
 	}
 	decoded, _ = pem.Decode(buf)
-	if decoded == nil || decoded.Type != "RSA PRIVATE KEY" {
+	if decoded == nil || decoded.Type != "PRIVATE KEY" {
 		return fmt.Errorf("Error while decoding %s", keyFilename)
 	}
-	c.rsaKey, err = x509.ParsePKCS1PrivateKey(decoded.Bytes)
+
+	key, err := x509.ParsePKCS8PrivateKey(decoded.Bytes)
 	if err != nil {
 		return err
 	}
+	c.Key = key.(crypto.Signer)
 
 	return nil
 }

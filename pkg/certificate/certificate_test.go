@@ -15,6 +15,9 @@
 package certificate
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rsa"
 	"crypto/x509"
 	"io/ioutil"
 	"net"
@@ -30,7 +33,7 @@ func TestSubjectName(t *testing.T) {
 	input := Certificate{Subject: "CN=Joe"}
 	err := input.Generate(nil)
 	assert.Nil(t, err)
-	got, err := x509.ParseCertificate(input.cert)
+	got, err := x509.ParseCertificate(input.Cert)
 	assert.Nil(t, err)
 	assert.Equal(t, "Joe", got.Subject.CommonName)
 }
@@ -39,7 +42,7 @@ func TestSubjectAltName(t *testing.T) {
 	input := Certificate{Subject: "CN=Joe", SubjectAltName: []string{"DNS:host.example.com", "URI:http://www.example.com", "IP:1.2.3.4"}}
 	err := input.Generate(nil)
 	assert.Nil(t, err)
-	got, err := x509.ParseCertificate(input.cert)
+	got, err := x509.ParseCertificate(input.Cert)
 	assert.Nil(t, err)
 	assert.Equal(t, "Joe", got.Subject.CommonName)
 	assert.Equal(t, "host.example.com", got.DNSNames[0])
@@ -47,28 +50,45 @@ func TestSubjectAltName(t *testing.T) {
 	assert.Equal(t, net.IP{1, 2, 3, 4}, got.IPAddresses[0])
 }
 
-func TestKeySize(t *testing.T) {
-	got := Certificate{Subject: "CN=Joe", KeySize: 1024}
+func TestEcKeySize(t *testing.T) {
+	got := Certificate{Subject: "CN=Joe", KeyType: "EC", KeySize: 256}
 	err := got.Generate(nil)
 	assert.Nil(t, err)
-	assert.Equal(t, 1024, got.rsaKey.Size()*8)
+	assert.Equal(t, elliptic.P256(), got.Key.Public().(*ecdsa.PublicKey).Curve)
 
-	got = Certificate{Subject: "CN=Joe", KeySize: 2048}
+	got = Certificate{Subject: "CN=Joe", KeyType: "EC", KeySize: 384}
 	err = got.Generate(nil)
 	assert.Nil(t, err)
-	assert.Equal(t, 2048, got.rsaKey.Size()*8)
+	assert.Equal(t, elliptic.P384(), got.Key.Public().(*ecdsa.PublicKey).Curve)
 
-	got = Certificate{Subject: "CN=Joe", KeySize: 4096}
+	got = Certificate{Subject: "CN=Joe", KeyType: "EC", KeySize: 521}
 	err = got.Generate(nil)
 	assert.Nil(t, err)
-	assert.Equal(t, 4096, got.rsaKey.Size()*8)
+	assert.Equal(t, elliptic.P521(), got.Key.Public().(*ecdsa.PublicKey).Curve)
+}
+
+func TestRsaKeySize(t *testing.T) {
+	got := Certificate{Subject: "CN=Joe", KeyType: "RSA", KeySize: 1024}
+	err := got.Generate(nil)
+	assert.Nil(t, err)
+	assert.Equal(t, 1024, got.Key.Public().(*rsa.PublicKey).Size()*8)
+
+	got = Certificate{Subject: "CN=Joe", KeyType: "RSA", KeySize: 2048}
+	err = got.Generate(nil)
+	assert.Nil(t, err)
+	assert.Equal(t, 2048, got.Key.Public().(*rsa.PublicKey).Size()*8)
+
+	got = Certificate{Subject: "CN=Joe", KeyType: "RSA", KeySize: 4096}
+	err = got.Generate(nil)
+	assert.Nil(t, err)
+	assert.Equal(t, 4096, got.Key.Public().(*rsa.PublicKey).Size()*8)
 }
 
 func TestExpires(t *testing.T) {
 	input := Certificate{Subject: "CN=Joe", Expires: "1h"}
 	err := input.Generate(nil)
 	assert.Nil(t, err)
-	cert, err := x509.ParseCertificate(input.cert)
+	cert, err := x509.ParseCertificate(input.Cert)
 	assert.Nil(t, err)
 	want, _ := time.ParseDuration("1h")
 	got := cert.NotAfter.Sub(cert.NotBefore)
@@ -79,21 +99,21 @@ func TestKeyUsage(t *testing.T) {
 	input := Certificate{Subject: "CN=Joe", KeyUsage: []string{"DigitalSignature"}}
 	err := input.Generate(nil)
 	assert.Nil(t, err)
-	got, err := x509.ParseCertificate(input.cert)
+	got, err := x509.ParseCertificate(input.Cert)
 	assert.Nil(t, err)
 	assert.Equal(t, x509.KeyUsageDigitalSignature, got.KeyUsage)
 
 	input = Certificate{Subject: "CN=Joe", KeyUsage: []string{"DigitalSignature", "KeyEncipherment"}}
 	err = input.Generate(nil)
 	assert.Nil(t, err)
-	got, err = x509.ParseCertificate(input.cert)
+	got, err = x509.ParseCertificate(input.Cert)
 	assert.Nil(t, err)
 	assert.Equal(t, x509.KeyUsageDigitalSignature|x509.KeyUsageKeyEncipherment, got.KeyUsage)
 
 	input = Certificate{Subject: "CN=Joe", KeyUsage: []string{"DigitalSignature", "ContentCommitment", "KeyEncipherment", "DataEncipherment", "KeyAgreement", "CertSign", "CRLSign", "EncipherOnly", "DecipherOnly"}}
 	err = input.Generate(nil)
 	assert.Nil(t, err)
-	got, err = x509.ParseCertificate(input.cert)
+	got, err = x509.ParseCertificate(input.Cert)
 	assert.Nil(t, err)
 	assert.Equal(t, x509.KeyUsageDigitalSignature|x509.KeyUsageContentCommitment|x509.KeyUsageKeyEncipherment|x509.KeyUsageDataEncipherment|x509.KeyUsageKeyAgreement|x509.KeyUsageCertSign|x509.KeyUsageCRLSign|x509.KeyUsageEncipherOnly|x509.KeyUsageDecipherOnly, got.KeyUsage)
 }
@@ -102,7 +122,7 @@ func TestIssuer(t *testing.T) {
 	input1 := Certificate{Subject: "CN=Joe"}
 	err := input1.Generate(nil)
 	assert.Nil(t, err)
-	got, err := x509.ParseCertificate(input1.cert)
+	got, err := x509.ParseCertificate(input1.Cert)
 	assert.Nil(t, err)
 	assert.Equal(t, "Joe", got.Subject.CommonName)
 	assert.Equal(t, "Joe", got.Issuer.CommonName)
@@ -111,7 +131,7 @@ func TestIssuer(t *testing.T) {
 	input2 := Certificate{Subject: "CN=EndEntity", Issuer: "CN:Joe"}
 	err = input2.Generate(&input1)
 	assert.Nil(t, err)
-	got, err = x509.ParseCertificate(input2.cert)
+	got, err = x509.ParseCertificate(input2.Cert)
 	assert.Nil(t, err)
 	assert.Equal(t, "EndEntity", got.Subject.CommonName)
 	assert.Equal(t, "Joe", got.Issuer.CommonName)
@@ -132,7 +152,7 @@ func TestFilename(t *testing.T) {
 	input := Certificate{Subject: "CN=dummy", Filename: "Joe"}
 	err = input.Load(dir)
 	assert.Nil(t, err)
-	cert, err := x509.ParseCertificate(input.cert)
+	cert, err := x509.ParseCertificate(input.Cert)
 	assert.Nil(t, err)
 	assert.Equal(t, "Joe", cert.Subject.CommonName)
 
@@ -145,7 +165,7 @@ func TestFilename(t *testing.T) {
 	input = Certificate{Subject: "CN=dummy", Filename: "mycert"}
 	err = input.Load(dir)
 	assert.Nil(t, err)
-	cert, err = x509.ParseCertificate(input.cert)
+	cert, err = x509.ParseCertificate(input.Cert)
 	assert.Nil(t, err)
 	assert.Equal(t, "Jane", cert.Subject.CommonName)
 }
@@ -154,7 +174,7 @@ func TestIsCa(t *testing.T) {
 	input1 := Certificate{Subject: "CN=Joe"}
 	err := input1.Generate(nil)
 	assert.Nil(t, err)
-	got, err := x509.ParseCertificate(input1.cert)
+	got, err := x509.ParseCertificate(input1.Cert)
 	assert.Nil(t, err)
 	assert.Equal(t, x509.KeyUsageCertSign|x509.KeyUsageCRLSign, got.KeyUsage)
 	assert.Equal(t, true, got.IsCA)
@@ -163,7 +183,7 @@ func TestIsCa(t *testing.T) {
 	input1 = Certificate{Subject: "CN=Joe", IsCA: &isCA}
 	err = input1.Generate(nil)
 	assert.Nil(t, err)
-	got, err = x509.ParseCertificate(input1.cert)
+	got, err = x509.ParseCertificate(input1.Cert)
 	assert.Nil(t, err)
 	assert.Equal(t, x509.KeyUsageCertSign|x509.KeyUsageCRLSign, got.KeyUsage)
 	assert.Equal(t, true, got.IsCA)
@@ -171,7 +191,7 @@ func TestIsCa(t *testing.T) {
 	input2 := Certificate{Subject: "CN=EndEntity", Issuer: "CN=Joe"}
 	err = input2.Generate(&input1)
 	assert.Nil(t, err)
-	got, err = x509.ParseCertificate(input2.cert)
+	got, err = x509.ParseCertificate(input2.Cert)
 	assert.Nil(t, err)
 	assert.Equal(t, x509.KeyUsageDigitalSignature|x509.KeyUsageKeyEncipherment, got.KeyUsage)
 	assert.Equal(t, false, got.IsCA)
@@ -185,7 +205,7 @@ func TestNotBeforeAndNotAfter(t *testing.T) {
 	input := Certificate{Subject: "CN=Joe", NotBefore: &wantNotBefore}
 	err := input.Generate(nil)
 	assert.Nil(t, err)
-	got, err := x509.ParseCertificate(input.cert)
+	got, err := x509.ParseCertificate(input.Cert)
 	assert.Nil(t, err)
 	assert.Equal(t, wantNotBefore, got.NotBefore)
 	assert.Equal(t, got.NotBefore.Add(defaultDuration), got.NotAfter)
@@ -193,7 +213,7 @@ func TestNotBeforeAndNotAfter(t *testing.T) {
 	input = Certificate{Subject: "CN=Joe", NotBefore: &wantNotBefore, NotAfter: &wantNotAfter}
 	err = input.Generate(nil)
 	assert.Nil(t, err)
-	got, err = x509.ParseCertificate(input.cert)
+	got, err = x509.ParseCertificate(input.Cert)
 	assert.Nil(t, err)
 	assert.Equal(t, wantNotBefore, got.NotBefore)
 	assert.Equal(t, wantNotAfter, got.NotAfter)
@@ -223,9 +243,19 @@ func TestInvalidSubjectAltName(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestInvalidKeysize(t *testing.T) {
-	input := Certificate{Subject: "CN=Joe", KeySize: 1}
+func TestInvalidKeyType(t *testing.T) {
+	input := Certificate{Subject: "CN=Joe", KeyType: "not-a-key-type"}
 	err := input.Generate(nil)
+	assert.NotNil(t, err)
+}
+
+func TestInvalidKeySize(t *testing.T) {
+	input := Certificate{Subject: "CN=Joe", KeyType: "EC", KeySize: 1}
+	err := input.Generate(nil)
+	assert.NotNil(t, err)
+
+	input = Certificate{Subject: "CN=Joe", KeyType: "RSA", KeySize: 1}
+	err = input.Generate(nil)
 	assert.NotNil(t, err)
 }
 
