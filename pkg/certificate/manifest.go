@@ -67,8 +67,17 @@ func GenerateCertficatesFromManifest(manifestFilename, stateFilename, destinatio
 		allCerts[c.Subject] = &c
 
 		// compare hash from state file to has of loaded certificate
-		if state[c.Subject] == c.Hash() {
+		hash, ok := state[c.Subject]
+		if hash == c.Hash() {
 			fmt.Printf("No changes: skipping %s\n", c.Filename)
+			continue // continue to next certificate in manifest
+		}
+
+		// if certificate is already valid but it did not exist in state file:
+		// "adopt" the existing certificate like we would have generated it
+		if c.Generated && !ok {
+			fmt.Printf("Recognized existing certificate: skipping %s\n", c.Filename)
+			state[c.Subject] = c.Hash()
 			continue // continue to next certificate in manifest
 		}
 

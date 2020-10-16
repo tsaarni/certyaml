@@ -52,8 +52,9 @@ type Certificate struct {
 	NotAfter       *time.Time `yaml:"not_after"`
 
 	// generated at runtime, not read from yaml
-	Key  crypto.Signer `yaml:"-"`
-	Cert []byte        `yaml:"-"`
+	Key       crypto.Signer `yaml:"-"`
+	Cert      []byte        `yaml:"-"`
+	Generated bool          `hash:"-"`
 }
 
 // getKeyUsage converts key usage string representation to x509.KeyUsage
@@ -247,6 +248,9 @@ func (c *Certificate) Generate(ca *Certificate) error {
 
 	c.Cert, err = x509.CreateCertificate(rand.Reader, template, issuerCert, c.Key.Public(), issuerKey)
 
+	// Mark the state as valid
+	c.Generated = true
+
 	return err
 }
 
@@ -311,15 +315,26 @@ func (c *Certificate) Load(srcdir string) error {
 		return err
 	}
 	decoded, _ = pem.Decode(buf)
-	if decoded == nil || decoded.Type != "PRIVATE KEY" {
+	if decoded == nil {
 		return fmt.Errorf("Error while decoding %s", keyFilename)
 	}
 
-	key, err := x509.ParsePKCS8PrivateKey(decoded.Bytes)
+	var key interface{}
+	if decoded.Type == "PRIVATE KEY" {
+		key, err = x509.ParsePKCS8PrivateKey(decoded.Bytes)
+	} else if decoded.Type == "RSA PRIVATE KEY" {
+		key, err = x509.ParsePKCS1PrivateKey(decoded.Bytes)
+	} else {
+		return fmt.Errorf("Error while decoding %s", keyFilename)
+	}
+
 	if err != nil {
 		return err
 	}
 	c.Key = key.(crypto.Signer)
+
+	// Mark the state as valid
+	c.Generated = true
 
 	return nil
 }
