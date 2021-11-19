@@ -39,7 +39,7 @@ Release builds are available for download in [releases page](https://github.com/
 Go compiler is required to build `certyaml` binary
 
 ```bash
-GO111MODULE=on go get github.com/tsaarni/certyaml@v0.2.0
+go install github.com/tsaarni/certyaml@latest
 ```
 
 The executable will be stored in the go path, by default `~/go/bin/certyaml`.
