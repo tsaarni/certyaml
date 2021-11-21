@@ -35,56 +35,63 @@ import (
 )
 
 // Certificate defines the properties for generating a certificate.
+//
+// Note that struct tags are for certyaml command line command to unmarshal manifest file.
 type Certificate struct {
 	// Subject defines the distinguished name for the certificate.
 	// Example: CN=Joe.
-	Subject string
+	Subject string `json:"subject"`
 
 	// SubjectAltNames defines an optional list of values for x509 Subject Alternative Name extension.
 	// Examples: DNS:www.example.com, IP:1.2.3.4, URI:https://www.example.com.
-	SubjectAltNames []string
+	SubjectAltNames []string `json:"sans"`
 
 	// KeyType defines the certificate key algorithm.
-	// Default value is KeyTypeEC (elliptic curve).
-	KeyType *KeyType
+	// Default value is KeyTypeEC (elliptic curve) if KeyType is undefined (when value is 0).
+	KeyType KeyType `json:"key_type"`
 
 	// KeySize defines the key length in bits.
-	// Default value is 256 if key_size is not defined.
+	// Default value is 256 (EC) or 2048 (RSA) if KeySize is undefined (when value is 0).
 	// Examples: For key_type EC: 256, 384, 521. For key_type RSA: 1024, 2048, 4096.
-	KeySize int
+	KeySize int `json:"key_size"`
 
 	// Expires automatically defines certificate's NotAfter field by adding duration defined in Expires to the current time.
-	// Default value is 8760h (one year) if expires is not defined.
+	// Default value is 8760h (one year) if Expires is undefined (when value is nil).
 	// NotAfter takes precedence over Expires.
-	Expires *time.Duration
+	Expires *time.Duration `json:"-"`
 
 	// KeyUsage defines bitmap of values for x509 key usage extension.
-	// If key_usages is not defined, CertSign and CRLSign are set for CA certificates, KeyEncipherment and DigitalSignature are set for end-entity certificates.
-	KeyUsage x509.KeyUsage
+	// If KeyUsage is undefined (when value is 0),
+	// CertSign and CRLSign are set for CA certificates,
+	// KeyEncipherment and DigitalSignature are set for end-entity certificates.
+	KeyUsage x509.KeyUsage `json:"key_usages"`
 
 	// Issuer refers to the issuer Certificate.
-	// Self-signed certificate is generated if issuer is nil.
-	Issuer *Certificate
+	// Self-signed certificate is generated if Issuer is undefined (when value is nil).
+	Issuer *Certificate `json:"-" hash:"-"`
 
 	// IsCA defines if certificate is / is not CA.
-	// If IsCA is not defined, true is set by default for self-signed certificates (Issuer is nil).
-	IsCA *bool
+	// If IsCA is undefined (when value is nil), true is set by default for self-signed certificates (Issuer is nil).
+	IsCA *bool `json:"ca"`
 
 	// NotBefore defines certificate not to be valid before this time.
-	NotBefore *time.Time
+	// Default value is current time if NotBefore is undefined (when value is nil).
+	NotBefore *time.Time `json:"not_before"`
 
 	// NotAfter defines certificate not to be valid after this time.
-	NotAfter *time.Time
+	// Default value is current time +  Expires if NotAfter is undefined (when value is nil)
+	NotAfter *time.Time `json:"not_after"`
 
 	//
 	// Private fields follow.
 	//
 
-	// generatedCert is a pointer to the generated certificate and private key.
-	generatedCert *tls.Certificate
+	// GeneratedCert is a pointer to the generated certificate and private key.
+	// It is not read from manifest file, nor should it be calculated in hash when comparing if manifest has changed since last run.
+	GeneratedCert *tls.Certificate `json:"-" hash:"-"`
 }
 
-type KeyType int
+type KeyType uint
 
 const (
 	KeyTypeEC = iota
@@ -96,7 +103,7 @@ func (c *Certificate) TLSCertificate() (tls.Certificate, error) {
 	if err != nil {
 		return tls.Certificate{}, err
 	}
-	return *c.generatedCert, nil
+	return *c.GeneratedCert, nil
 }
 
 func (c *Certificate) X509Certificate() (x509.Certificate, error) {
@@ -104,11 +111,19 @@ func (c *Certificate) X509Certificate() (x509.Certificate, error) {
 	if err != nil {
 		return x509.Certificate{}, err
 	}
-	cert, err := x509.ParseCertificate(c.generatedCert.Certificate[0])
+	cert, err := x509.ParseCertificate(c.GeneratedCert.Certificate[0])
 	return *cert, err
 }
 
-func (c *Certificate) writePEM(certFile, keyFile string) error {
+func (c *Certificate) PublicKey() (crypto.PublicKey, error) {
+	err := c.ensureGenerated()
+	if err != nil {
+		return nil, err
+	}
+	return c.GeneratedCert.PrivateKey.(crypto.Signer).Public(), nil
+}
+
+func (c *Certificate) WritePEM(certFile, keyFile string) error {
 	err := c.ensureGenerated()
 	if err != nil {
 		return err
@@ -120,10 +135,13 @@ func (c *Certificate) writePEM(certFile, keyFile string) error {
 	}
 	defer cf.Close()
 
-	pem.Encode(cf, &pem.Block{
+	err = pem.Encode(cf, &pem.Block{
 		Type:  "CERTIFICATE",
-		Bytes: c.generatedCert.Certificate[0],
+		Bytes: c.GeneratedCert.Certificate[0],
 	})
+	if err != nil {
+		return err
+	}
 
 	kf, err := os.Create(keyFile)
 	if err != nil {
@@ -131,15 +149,18 @@ func (c *Certificate) writePEM(certFile, keyFile string) error {
 	}
 	defer kf.Close()
 
-	bytes, err := x509.MarshalPKCS8PrivateKey(c.generatedCert.PrivateKey)
+	bytes, err := x509.MarshalPKCS8PrivateKey(c.GeneratedCert.PrivateKey)
 	if err != nil {
 		return err
 	}
 
-	pem.Encode(kf, &pem.Block{
+	err = pem.Encode(kf, &pem.Block{
 		Type:  "PRIVATE KEY",
 		Bytes: bytes,
 	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -150,15 +171,10 @@ func (c *Certificate) defaults() error {
 		return err
 	}
 
-	if c.KeyType == nil {
-		var k KeyType = KeyTypeEC
-		c.KeyType = &k
-	}
-
 	if c.KeySize == 0 {
-		if *c.KeyType == KeyTypeEC {
+		if c.KeyType == KeyTypeEC {
 			c.KeySize = 256
-		} else if *c.KeyType == KeyTypeRSA {
+		} else if c.KeyType == KeyTypeRSA {
 			c.KeySize = 2048
 		}
 	}
@@ -193,7 +209,7 @@ func (c *Certificate) ensureGenerated() error {
 		}
 	}
 
-	if c.generatedCert == nil {
+	if c.GeneratedCert == nil {
 		err := c.Generate()
 		if err != nil {
 			return err
@@ -212,7 +228,7 @@ func (c *Certificate) Generate() error {
 
 	// Generate key-pair for the certificate.
 	var key crypto.Signer
-	if *c.KeyType == KeyTypeEC {
+	if c.KeyType == KeyTypeEC {
 		var curve elliptic.Curve
 		switch c.KeySize {
 		case 256:
@@ -225,7 +241,7 @@ func (c *Certificate) Generate() error {
 			return fmt.Errorf("invalid EC key size: %d (valid: 256, 384, 521)", c.KeySize)
 		}
 		key, err = ecdsa.GenerateKey(curve, rand.Reader)
-	} else if *c.KeyType == KeyTypeRSA {
+	} else if c.KeyType == KeyTypeRSA {
 		key, err = rsa.GenerateKey(rand.Reader, c.KeySize)
 	}
 	if err != nil {
@@ -284,11 +300,11 @@ func (c *Certificate) Generate() error {
 	var issuerCert *x509.Certificate
 	var issuerKey crypto.Signer
 	if c.Issuer != nil {
-		issuerCert, err = x509.ParseCertificate(c.Issuer.generatedCert.Certificate[0])
+		issuerCert, err = x509.ParseCertificate(c.Issuer.GeneratedCert.Certificate[0])
 		if err != nil {
 			return nil
 		}
-		issuerKey = c.Issuer.generatedCert.PrivateKey.(crypto.Signer)
+		issuerKey = c.Issuer.GeneratedCert.PrivateKey.(crypto.Signer)
 
 	} else {
 		// create self-signed certificate
@@ -302,7 +318,7 @@ func (c *Certificate) Generate() error {
 		return nil
 	}
 
-	c.generatedCert = &tls.Certificate{
+	c.GeneratedCert = &tls.Certificate{
 		Certificate: [][]byte{cert},
 		PrivateKey:  key,
 	}

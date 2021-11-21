@@ -6,8 +6,8 @@ Declarative way to create x509 certificates for test environments.
 
 ## Description
 
-Certyaml is a command line tool for issuing certificates.
-It is similar to `openssl` or `cfssl` which can also be used for issuing certificates, but certyaml provides simpler way to define complete PKI hierarchies with a compact [YAML syntax](#YAML-syntax).
+Certyaml is a command line tool and a Go API for issuing certificates.
+It is similar to `openssl` or `cfssl` which can also be used for issuing certificates, but certyaml provides simpler way to define complete PKI hierarchies with a compact [YAML syntax](#YAML-syntax) or directly from Go code.
 
 Certyaml is targeted for developers who need to set up a private PKI for test environments.
 It cannot be used for production environments where publicly trusted certificates are needed.
