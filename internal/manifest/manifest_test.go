@@ -1,4 +1,4 @@
-// Copyright 2020 Tero Saarni
+// Copyright certyaml authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package certificate
+package manifest
 
 import (
-	"crypto/x509"
-	"encoding/pem"
 	"io/ioutil"
 	"os"
 	"path"
@@ -27,22 +25,12 @@ import (
 	"golang.org/x/mod/sumdb/dirhash"
 )
 
-func readCertificate(path string) *x509.Certificate {
-	buf, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil
-	}
-	decoded, _ := pem.Decode(buf)
-	cert, err := x509.ParseCertificate(decoded.Bytes)
-	return cert
-}
-
 func TestManifestHandling(t *testing.T) {
 	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 
-	err = GenerateCertficatesFromManifest("testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
+	err = GenerateCertificates("testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.Nil(t, err)
 
 	wantFiles := []string{
@@ -65,7 +53,7 @@ func TestManifestHandling(t *testing.T) {
 		"state.yaml",
 	}
 
-	// check that files got generated
+	// Check that files got generated.
 	fileInfos, err := ioutil.ReadDir(dir)
 	assert.Nil(t, err)
 	var gotFiles []string
@@ -81,31 +69,31 @@ func TestStateHandling(t *testing.T) {
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 
-	err = GenerateCertficatesFromManifest("testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
+	err = GenerateCertificates("testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.Nil(t, err)
 
-	// check that calling generate again does not alter the state
+	// Check that calling generate again does not alter the state.
 	h1, err := dirhash.HashDir(dir, "", dirhash.Hash1)
 	assert.Nil(t, err)
-	err = GenerateCertficatesFromManifest("testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
+	err = GenerateCertificates("testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.Nil(t, err)
 
 	h2, err := dirhash.HashDir(dir, "", dirhash.Hash1)
 	assert.Nil(t, err)
 	assert.Equal(t, h1, h2)
 
-	// check that files are re-generated if some are missing
+	// Check that files are re-generated if some are missing.
 	os.Remove(path.Join(dir, "intermediate-ca-key.pem"))
 	os.Remove(path.Join(dir, "intermediate-ca.pem"))
-	err = GenerateCertficatesFromManifest("testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
+	err = GenerateCertificates("testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.Nil(t, err)
 
 	h3, err := dirhash.HashDir(dir, "", dirhash.Hash1)
 	assert.Nil(t, err)
 	assert.NotEqual(t, h2, h3)
 
-	// check that files are re-generated if manifest changes
-	err = GenerateCertficatesFromManifest("testdata/certs-state-2.yaml", path.Join(dir, "state.yaml"), dir)
+	// Check that files are re-generated if manifest changes.
+	err = GenerateCertificates("testdata/certs-state-2.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.Nil(t, err)
 
 	h4, err := dirhash.HashDir(dir, "", dirhash.Hash1)
@@ -117,12 +105,12 @@ func TestInvalidIssuer(t *testing.T) {
 	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
-	err = GenerateCertficatesFromManifest("testdata/certs-invalid-issuer.yaml", path.Join(dir, "state.yaml"), dir)
+	err = GenerateCertificates("testdata/certs-invalid-issuer.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.NotNil(t, err)
 }
 
 func TestInvalidManifest(t *testing.T) {
-	err := GenerateCertficatesFromManifest("testdata/non-existing-manifest.yaml", "", "")
+	err := GenerateCertificates("testdata/non-existing-manifest.yaml", "", "")
 	assert.NotNil(t, err)
 }
 
@@ -130,6 +118,6 @@ func TestInvalidDestinationDir(t *testing.T) {
 	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
-	err = GenerateCertficatesFromManifest("testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), "non-existing-dir")
+	err = GenerateCertificates("testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), "non-existing-dir")
 	assert.NotNil(t, err)
 }
