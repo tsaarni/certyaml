@@ -7,12 +7,12 @@ Declarative way to create x509 certificates for test environments.
 ## Description
 
 Certyaml is a command line tool and a Go API for issuing certificates.
-It is similar to `openssl` or `cfssl` which can also be used for issuing certificates, but certyaml provides simpler way to define complete PKI hierarchies with a compact [YAML syntax](#YAML-syntax) or directly from Go code.
+It is similar to `openssl` or `cfssl` which can also be used for issuing certificates, but certyaml provides simpler way to define complete PKI hierarchies with a compact [YAML syntax](#YAML-syntax) or directly from Go code with a simple API.
 
 Certyaml is targeted for developers who need to set up a private PKI for test environments.
 It cannot be used for production environments where publicly trusted certificates are needed.
 
-## Usage
+## Using certyaml
 
 ```
 Usage: certyaml [-d destination] [certs.yaml]
@@ -27,8 +27,7 @@ in current directory.
         Destination directory where to create the certificates and keys
 ```
 
-
-## Installing
+### Installing
 
 **Release builds**
 
@@ -44,8 +43,7 @@ go install github.com/tsaarni/certyaml/cmd/certyaml@latest
 
 The executable will be stored in the go path, by default `~/go/bin/certyaml`.
 
-
-## Using certyaml
+### Using certyaml
 
 Create a YAML manifest file which describes the wanted PKI hierarchy and end-entity certificates
 
@@ -144,7 +142,7 @@ Writing state: certs.state
 ```
 
 
-## YAML syntax
+### YAML syntax
 
 | tag | description | examples |
 | --- | ----------- | -------- |
@@ -159,3 +157,13 @@ Writing state: certs.state
 | ca | Set certificate is / is not CA. If `ca` is not defined, `true` is set by default for self-signed certificates. | `true` or  `false` |
 | not_before | Certificate is not valid before this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)) | `2020-01-01T09:00:00Z` |
 | not_after | Certificate is not valid after this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)) | `2020-01-01T09:00:00Z` |
+
+## Certyaml go API
+
+For using certyaml in Go applications, see API documentation at https://pkg.go.dev/github.com/tsaarni/certyaml.
+
+```console
+go get -u github.com/tsaarni/certyaml
+```
+
+For examples on how to use the API use, see [`certificate_test.go`](certificate_test.go).
