@@ -63,7 +63,7 @@ sans:
 ---
 subject: cn=selfsigned-server
 ca: false
-key_usage:
+key_usages:
 - KeyEncipherment
 - DigitalSignature
 ---
@@ -161,8 +161,4 @@ Writing state: certs.state
 
 For using certyaml in Go applications, see [API documentation](https://pkg.go.dev/github.com/tsaarni/certyaml).
 
-```console
-go get -u github.com/tsaarni/certyaml
-```
-
-For examples on how to use the API use, see [`certificate_test.go`](certificate_test.go).
+For more examples on how to use the API use, see [`examples/go-api`](examples/go-api) and [`certificate_test.go`](certificate_test.go).

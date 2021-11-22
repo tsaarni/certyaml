@@ -1,3 +1,8 @@
+# Generate certificates by runnnig:
+#
+#   mkdir certs
+#   certyaml -d certs
+#
 subject: cn=server-root-ca
 ---
 subject: cn=intermediate-ca
@@ -12,7 +17,7 @@ sans:
 ---
 subject: cn=selfsigned-server
 ca: false
-key_usage:
+key_usages:
 - KeyEncipherment
 - DigitalSignature
 ---
