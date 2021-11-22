@@ -1,0 +1,28 @@
+subject: cn=ca
+---
+subject: cn=rsa-cert
+sans:
+- DNS:www.example.com
+- IP:127.0.0.1
+- URI:spiffe://myworkload
+key_type: RSA
+key_size: 4096
+key_usages:
+- DigitalSignature
+- ContentCommitment
+- KeyEncipherment
+- DataEncipherment
+- KeyAgreement
+- CertSign
+- CRLSign
+- EncipherOnly
+- DecipherOnly
+issuer: cn=ca
+ca: true
+not_before: 2020-01-01T09:00:00Z
+not_after: 2030-01-01T09:00:00Z
+---
+subject: cn=ec-cert
+key_size: 256
+not_before: 2020-01-01T09:00:00Z
+expires: 1h

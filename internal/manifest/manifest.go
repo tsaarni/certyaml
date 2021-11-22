@@ -18,12 +18,14 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/cnf/structhash"
@@ -48,9 +50,11 @@ type Manifest struct {
 type CertificateManifest struct {
 	api.Certificate
 
-	ExpiresAsString string `json:"expires"`
-	IssuerAsString  string `json:"issuer"`
-	Filename        string `json:"filename"`
+	KeyTypeAsString   string   `json:"key_type"`
+	KeyUsagesAsString []string `json:"key_usages"`
+	ExpiresAsString   string   `json:"expires"`
+	IssuerAsString    string   `json:"issuer"`
+	Filename          string   `json:"filename"`
 }
 
 func (c *CertificateManifest) hash() string {
@@ -66,16 +70,16 @@ func GenerateCertificates(output io.Writer, manifestFile, stateFile, destDir str
 	}
 
 	fmt.Fprintf(output, "Loading manifest file: %s\n", manifestFile)
-	f, err := os.Open(manifestFile)
+	f, err := os.Open(filepath.Clean(manifestFile))
 	if err != nil {
 		return fmt.Errorf("cannot read certificate manifest file: %s", err)
 	}
-	defer f.Close()
+	defer f.Close() // #nosec G307
 
 	// Load stored state (if any) about previously created certificates and private keys.
 	// The state file is used to determine when certificates need to be re-created.
 	fmt.Fprintf(output, "Reading certificate state file: %s\n", stateFile)
-	data, _ := ioutil.ReadFile(stateFile)
+	data, _ := ioutil.ReadFile(filepath.Clean(stateFile))
 	err = yaml.Unmarshal(data, &m.hashes)
 	if err != nil {
 		return fmt.Errorf("error while parsing certificate state file: %s", err)
@@ -131,7 +135,7 @@ func GenerateCertificates(output io.Writer, manifestFile, stateFile, destDir str
 		return err
 	}
 	fmt.Fprintf(output, "Writing state: %s\n", stateFile)
-	err = ioutil.WriteFile(stateFile, stateYaml, 0644)
+	err = ioutil.WriteFile(stateFile, stateYaml, 0600)
 	if err != nil {
 		return fmt.Errorf("error while writing state: %s", err)
 	}
@@ -173,6 +177,25 @@ func (m *Manifest) processCertificate(c *CertificateManifest) error {
 		c.Issuer = &ca.Certificate
 	}
 
+	if c.KeyTypeAsString != "" {
+		switch c.KeyTypeAsString {
+		case "EC":
+			c.KeyType = api.KeyTypeEC
+		case "RSA":
+			c.KeyType = api.KeyTypeRSA
+		default:
+			return fmt.Errorf("key_type contains invalid value: %s", c.KeyTypeAsString)
+		}
+	}
+
+	if len(c.KeyUsagesAsString) > 0 {
+		usage, err := getKeyUsage(c.KeyUsagesAsString)
+		if err != nil {
+			return err
+		}
+		c.KeyUsage = usage
+	}
+
 	// Try to load previously generated certificate and key, which might not exists, so ignore errors.
 	certOnDisk, err := tls.LoadX509KeyPair(path.Join(m.dataDir, c.Filename+".pem"), path.Join(m.dataDir, c.Filename+"-key.pem"))
 	if err == nil {
@@ -196,4 +219,30 @@ func splitByDocument(data []byte, atEOF bool) (advance int, token []byte, err er
 		return len(data), data, nil
 	}
 	return 0, nil, nil
+}
+
+// getKeyUsage converts key usage string representation to x509.KeyUsage
+func getKeyUsage(keyUsage []string) (x509.KeyUsage, error) {
+	var result x509.KeyUsage
+	var usages = map[string]x509.KeyUsage{
+		"DigitalSignature":  x509.KeyUsageDigitalSignature,
+		"ContentCommitment": x509.KeyUsageContentCommitment,
+		"KeyEncipherment":   x509.KeyUsageKeyEncipherment,
+		"DataEncipherment":  x509.KeyUsageDataEncipherment,
+		"KeyAgreement":      x509.KeyUsageKeyAgreement,
+		"CertSign":          x509.KeyUsageCertSign,
+		"CRLSign":           x509.KeyUsageCRLSign,
+		"EncipherOnly":      x509.KeyUsageEncipherOnly,
+		"DecipherOnly":      x509.KeyUsageDecipherOnly,
+	}
+
+	for _, usage := range keyUsage {
+		ku, ok := usages[usage]
+		if !ok {
+			return result, fmt.Errorf("key_usages contains invalid value: %s", usage)
+		}
+		result |= ku
+	}
+
+	return result, nil
 }

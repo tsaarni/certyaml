@@ -5,7 +5,7 @@ test:
 
 check: test
 	golangci-lint run
-	gosec -quiet ./..
+	gosec -quiet ./...
 
 build:
 	go build -v ./cmd/certyaml
