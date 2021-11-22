@@ -62,6 +62,8 @@ func main() {
 
 				// Configure trusted CA certificate to validate client cert.
 				ClientCAs: certPool,
+
+				MinVersion: tls.VersionTLS13,
 			},
 		}
 
@@ -84,6 +86,8 @@ func main() {
 
 				// Configure trusted CA certificate to validate server cert.
 				RootCAs: certPool,
+
+				MinVersion: tls.VersionTLS13,
 			},
 		},
 	}
