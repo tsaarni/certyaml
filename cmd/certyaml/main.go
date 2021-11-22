@@ -49,7 +49,7 @@ func main() {
 	}
 	stateFile := strings.TrimSuffix(manifestFile, filepath.Ext(manifestFile))
 	stateFile = path.Join(destination, path.Base(stateFile)+".state")
-	err := manifest.GenerateCertificates(manifestFile, stateFile, destination)
+	err := manifest.GenerateCertificates(os.Stdout, manifestFile, stateFile, destination)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Generating certificates failed: %s\n", err)
 		os.Exit(1)

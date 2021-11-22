@@ -141,7 +141,6 @@ No changes in manifest: skipping clientcert
 Writing state: certs.state
 ```
 
-
 ### YAML syntax
 
 | tag | description | examples |
@@ -158,9 +157,9 @@ Writing state: certs.state
 | not_before | Certificate is not valid before this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)) | `2020-01-01T09:00:00Z` |
 | not_after | Certificate is not valid after this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)) | `2020-01-01T09:00:00Z` |
 
-## Certyaml go API
+## Go API
 
-For using certyaml in Go applications, see API documentation at https://pkg.go.dev/github.com/tsaarni/certyaml.
+For using certyaml in Go applications, see [API documentation](https://pkg.go.dev/github.com/tsaarni/certyaml).
 
 ```console
 go get -u github.com/tsaarni/certyaml

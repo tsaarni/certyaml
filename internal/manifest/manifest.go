@@ -20,6 +20,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -57,14 +58,14 @@ func (c *CertificateManifest) hash() string {
 }
 
 // GenerateCertificates generates certificates and private keys and stores them into directory pointed by the destination parameter
-func GenerateCertificates(manifestFile, stateFile, destDir string) error {
+func GenerateCertificates(output io.Writer, manifestFile, stateFile, destDir string) error {
 	m := &Manifest{
 		dataDir: destDir,
 		certs:   make(map[string]*CertificateManifest),
 		hashes:  make(map[string]string),
 	}
 
-	fmt.Printf("Loading manifest file: %s\n", manifestFile)
+	fmt.Fprintf(output, "Loading manifest file: %s\n", manifestFile)
 	f, err := os.Open(manifestFile)
 	if err != nil {
 		return fmt.Errorf("cannot read certificate manifest file: %s", err)
@@ -73,7 +74,7 @@ func GenerateCertificates(manifestFile, stateFile, destDir string) error {
 
 	// Load stored state (if any) about previously created certificates and private keys.
 	// The state file is used to determine when certificates need to be re-created.
-	fmt.Printf("Reading certificate state file: %s\n", stateFile)
+	fmt.Fprintf(output, "Reading certificate state file: %s\n", stateFile)
 	data, _ := ioutil.ReadFile(stateFile)
 	err = yaml.Unmarshal(data, &m.hashes)
 	if err != nil {
@@ -98,14 +99,14 @@ func GenerateCertificates(manifestFile, stateFile, destDir string) error {
 		// Compare hash from state file to hash of the loaded certificate.
 		hash, ok := m.hashes[c.Subject]
 		if ok && c.GeneratedCert != nil && hash == c.hash() {
-			fmt.Printf("No changes: skipping %s\n", c.Filename)
+			fmt.Fprintf(output, "No changes: skipping %s\n", c.Filename)
 			continue // Continue to next certificate in manifest.
 		}
 
 		// If certificate was read successfully but it did not exist in state file:
 		// "adopt" the existing certificate like we would have generated it.
 		if !ok && c.GeneratedCert != nil {
-			fmt.Printf("Recognized existing certificate: skipping %s\n", c.Filename)
+			fmt.Fprintf(output, "Recognized existing certificate: skipping %s\n", c.Filename)
 			m.hashes[c.Subject] = c.hash()
 			continue // Continue to next certificate in manifest.
 		}
@@ -116,7 +117,7 @@ func GenerateCertificates(manifestFile, stateFile, destDir string) error {
 		// Write the certificate and key to data dir.
 		certFile := path.Join(m.dataDir, c.Filename+".pem")
 		keyFile := path.Join(m.dataDir, c.Filename+"-key.pem")
-		fmt.Printf("Writing: %s %s\n", certFile, keyFile)
+		fmt.Fprintf(output, "Writing: %s %s\n", certFile, keyFile)
 		err = c.WritePEM(certFile, keyFile)
 		if err != nil {
 			return fmt.Errorf("error while saving certificate: %s", err)
@@ -129,7 +130,7 @@ func GenerateCertificates(manifestFile, stateFile, destDir string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Writing state: %s\n", stateFile)
+	fmt.Fprintf(output, "Writing state: %s\n", stateFile)
 	err = ioutil.WriteFile(stateFile, stateYaml, 0644)
 	if err != nil {
 		return fmt.Errorf("error while writing state: %s", err)

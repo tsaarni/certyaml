@@ -20,8 +20,8 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/url"
 	"os"
@@ -202,6 +202,59 @@ func TestInvalidKeySize(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestPEM(t *testing.T) {
+	ca := Certificate{
+		Subject: "cn=ca",
+	}
+
+	server := Certificate{
+		Subject:         "CN=server",
+		SubjectAltNames: []string{"DNS:localhost"},
+		Issuer:          &ca,
+	}
+
+	client := Certificate{
+		Subject: "CN=client",
+		Issuer:  &ca,
+	}
+
+	caCert, caKey, err := ca.PEM()
+	assert.Nil(t, err)
+
+	block, rest := pem.Decode(caCert)
+	assert.NotNil(t, block)
+	assert.Equal(t, "CERTIFICATE", block.Type)
+	assert.Empty(t, rest)
+	block, rest = pem.Decode(caKey)
+	assert.NotNil(t, block)
+	assert.Equal(t, "PRIVATE KEY", block.Type)
+	assert.Empty(t, rest)
+
+	serverCert, serverKey, err := server.PEM()
+	assert.Nil(t, err)
+
+	block, rest = pem.Decode(serverCert)
+	assert.NotNil(t, block)
+	assert.Equal(t, "CERTIFICATE", block.Type)
+	assert.Empty(t, rest)
+	block, rest = pem.Decode(serverKey)
+	assert.NotNil(t, block)
+	assert.Equal(t, "PRIVATE KEY", block.Type)
+	assert.Empty(t, rest)
+
+	clientCert, clientKey, err := client.PEM()
+	assert.Nil(t, err)
+
+	block, rest = pem.Decode(clientCert)
+	assert.NotNil(t, block)
+	assert.Equal(t, "CERTIFICATE", block.Type)
+	assert.Empty(t, rest)
+	block, rest = pem.Decode(clientKey)
+	assert.NotNil(t, block)
+	assert.Equal(t, "PRIVATE KEY", block.Type)
+	assert.Empty(t, rest)
+}
+
 func TestWritingPEMFiles(t *testing.T) {
 	ca := Certificate{
 		Subject: "cn=ca",
@@ -219,9 +272,7 @@ func TestWritingPEMFiles(t *testing.T) {
 	}
 
 	dir, err := ioutil.TempDir("/tmp", "certyaml-unittest")
-	if err != nil {
-		log.Fatal(err)
-	}
+	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 
 	// Write CA certificate to disk.

@@ -15,6 +15,7 @@
 package certyaml
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -123,41 +124,58 @@ func (c *Certificate) PublicKey() (crypto.PublicKey, error) {
 	return c.GeneratedCert.PrivateKey.(crypto.Signer).Public(), nil
 }
 
+func (c *Certificate) PEM() (cert []byte, key []byte, err error) {
+	err = c.ensureGenerated()
+	if err != nil {
+		return
+	}
+
+	var buf bytes.Buffer
+
+	err = pem.Encode(&buf, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: c.GeneratedCert.Certificate[0],
+	})
+	if err != nil {
+		return
+	}
+	cert = append(cert, buf.Bytes()...) // Create copy of underlying buf.
+
+	buf.Reset()
+
+	k, err := x509.MarshalPKCS8PrivateKey(c.GeneratedCert.PrivateKey)
+	if err != nil {
+		cert = nil
+		return
+	}
+	err = pem.Encode(&buf, &pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: k,
+	})
+	if err != nil {
+		cert = nil
+		return
+	}
+	key = append(key, buf.Bytes()...) // Create copy of underlying buf.
+
+	return
+}
+
 func (c *Certificate) WritePEM(certFile, keyFile string) error {
 	err := c.ensureGenerated()
 	if err != nil {
 		return err
 	}
 
-	cf, err := os.Create(certFile)
+	cert, key, err := c.PEM()
 	if err != nil {
 		return err
 	}
-	defer cf.Close()
-
-	err = pem.Encode(cf, &pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: c.GeneratedCert.Certificate[0],
-	})
+	err = os.WriteFile(certFile, cert, 0644)
 	if err != nil {
 		return err
 	}
-
-	kf, err := os.Create(keyFile)
-	if err != nil {
-		return err
-	}
-	defer kf.Close()
-
-	bytes, err := x509.MarshalPKCS8PrivateKey(c.GeneratedCert.PrivateKey)
-	if err != nil {
-		return err
-	}
-
-	err = pem.Encode(kf, &pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: bytes,
-	})
+	err = os.WriteFile(keyFile, key, 0644)
 	if err != nil {
 		return err
 	}
