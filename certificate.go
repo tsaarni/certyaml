@@ -95,9 +95,9 @@ const (
 	KeyTypeRSA
 )
 
-// TLSCertificate returns Certificate as tls.Certificate.
+// TLSCertificate returns the Certificate as tls.Certificate.
 // A key pair and certificate will be generated at first call of any Certificate functions.
-// Error is returned if generation fails.
+// Error is not nil if generation fails.
 func (c *Certificate) TLSCertificate() (tls.Certificate, error) {
 	err := c.ensureGenerated()
 	if err != nil {
@@ -106,9 +106,9 @@ func (c *Certificate) TLSCertificate() (tls.Certificate, error) {
 	return *c.GeneratedCert, nil
 }
 
-// X509Certificate returns Certificate as x509.Certificate.
+// X509Certificate returns the Certificate as x509.Certificate.
 // A key pair and certificate will be generated at first call of any Certificate functions.
-// Error is returned if generation fails.
+// Error is not nil if generation fails.
 func (c *Certificate) X509Certificate() (x509.Certificate, error) {
 	err := c.ensureGenerated()
 	if err != nil {
@@ -118,9 +118,9 @@ func (c *Certificate) X509Certificate() (x509.Certificate, error) {
 	return *cert, err
 }
 
-// PublicKey returns crypto.PublicKey associated to Certificate.
+// PublicKey returns crypto.PublicKey associated to the Certificate.
 // A key pair and certificate will be generated at first call of any Certificate functions.
-// Error is returned if generation fails.
+// Error is not nil if generation fails.
 func (c *Certificate) PublicKey() (crypto.PublicKey, error) {
 	err := c.ensureGenerated()
 	if err != nil {
@@ -129,9 +129,9 @@ func (c *Certificate) PublicKey() (crypto.PublicKey, error) {
 	return c.GeneratedCert.PrivateKey.(crypto.Signer).Public(), nil
 }
 
-// PEM returns Certificate as certificate and private key PEM buffers.
+// PEM returns the Certificate as certificate and private key PEM buffers.
 // A key pair and certificate will be generated at first call of any Certificate functions.
-// Error is returned if generation fails.
+// Error is not nil if generation fails.
 func (c *Certificate) PEM() (cert []byte, key []byte, err error) {
 	err = c.ensureGenerated()
 	if err != nil {
@@ -169,9 +169,9 @@ func (c *Certificate) PEM() (cert []byte, key []byte, err error) {
 	return
 }
 
-// WritePEM writes Certificate as certificate and private key PEM files.
+// WritePEM writes the Certificate as certificate and private key PEM files.
 // A key pair and certificate will be generated at first call of any Certificate functions.
-// Error is returned if generation fails.
+// Error is not nil if generation fails.
 func (c *Certificate) WritePEM(certFile, keyFile string) error {
 	err := c.ensureGenerated()
 	if err != nil {
@@ -240,11 +240,11 @@ func (c *Certificate) ensureGenerated() error {
 	return nil
 }
 
-// Generate forces re-generation of key pair and certificate according to current state of Certificate.
+// Generate forces re-generation of key pair and certificate according to current state of the Certificate.
 // Usually it is automatically called when necessary, e.g. PEM() will internally call Generate().
-// It can be called explicitly when Certificate fields have been changed since certificate was last generated,
-// or if a new certificate is needed.
-// Error is returned if generation fails.
+// It can be called explicitly after changing Certificate fields since certificate was last generated,
+// or when a new certificate with same values is needed.
+// Error is not nil if generation fails.
 func (c *Certificate) Generate() error {
 	// Traverse the certificate hierarchy recursively to ensure issuing CAs have been generated as well.
 	if c.Issuer != nil {
