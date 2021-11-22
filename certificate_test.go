@@ -308,3 +308,19 @@ func TestWritingPEMFiles(t *testing.T) {
 	assert.Nil(t, err, "failed getting tls.Certificate: %s", err)
 	assert.Equal(t, cert, certFromPEM)
 }
+
+func TestRegenerate(t *testing.T) {
+	cert := Certificate{Subject: "CN=Joe"}
+
+	old, err := cert.TLSCertificate()
+	assert.Nil(t, err)
+
+	err = cert.Generate()
+	assert.Nil(t, err)
+
+	new, err := cert.TLSCertificate()
+	assert.Nil(t, err)
+
+	assert.NotEqual(t, old.Certificate, new.Certificate)
+	assert.NotEqual(t, old.PrivateKey, new.PrivateKey)
+}

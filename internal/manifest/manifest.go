@@ -57,7 +57,7 @@ func (c *CertificateManifest) hash() string {
 	return fmt.Sprintf("%x", structhash.Sha1(c, 1))
 }
 
-// GenerateCertificates generates certificates and private keys and stores them into directory pointed by the destination parameter
+// GenerateCertificates generates certificates and private keys and stores them into directory pointed by the destination parameter.
 func GenerateCertificates(output io.Writer, manifestFile, stateFile, destDir string) error {
 	m := &Manifest{
 		dataDir: destDir,
@@ -184,6 +184,7 @@ func (m *Manifest) processCertificate(c *CertificateManifest) error {
 	return nil
 }
 
+// splitByDocument is a splitter function for bufio.Scanner for multi-document YAML files.
 func splitByDocument(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if atEOF && len(data) == 0 {
 		return 0, nil, nil
