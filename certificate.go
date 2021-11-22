@@ -49,7 +49,7 @@ type Certificate struct {
 
 	// KeyType defines the certificate key algorithm.
 	// Default value is KeyTypeEC (elliptic curve) if KeyType is undefined (when value is 0).
-	KeyType KeyType `json:"key_type"`
+	KeyType KeyType `json:"-"`
 
 	// KeySize defines the key length in bits.
 	// Default value is 256 (EC) or 2048 (RSA) if KeySize is undefined (when value is 0).
@@ -65,7 +65,7 @@ type Certificate struct {
 	// If KeyUsage is undefined (when value is 0),
 	// CertSign and CRLSign are set for CA certificates,
 	// KeyEncipherment and DigitalSignature are set for end-entity certificates.
-	KeyUsage x509.KeyUsage `json:"key_usages"`
+	KeyUsage x509.KeyUsage `json:"-"`
 
 	// Issuer refers to the issuer Certificate.
 	// Self-signed certificate is generated if Issuer is undefined (when value is nil).
@@ -182,11 +182,11 @@ func (c *Certificate) WritePEM(certFile, keyFile string) error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(certFile, cert, 0644)
+	err = os.WriteFile(certFile, cert, 0600)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(keyFile, key, 0644)
+	err = os.WriteFile(keyFile, key, 0600)
 	if err != nil {
 		return err
 	}
