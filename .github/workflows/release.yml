@@ -14,7 +14,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: ^1.14
+          go-version: '1.17.3'
 
       - name: Checkout code
         uses: actions/checkout@v2
@@ -24,9 +24,9 @@ jobs:
 
       - name: Build
         run: |
-          GOOS=linux   GOARCH=amd64 go build -v -o certyaml     . && tar zcvf certyaml-linux-amd64.tar.gz  certyaml && rm certyaml
-          GOOS=darwin  GOARCH=amd64 go build -v -o certyaml     . && tar zcvf certyaml-darwin-amd64.tar.gz certyaml && rm certyaml
-          GOOS=windows GOARCH=amd64 go build -v -o certyaml.exe . && zip      certyaml-windows-amd64.zip   certyaml.exe && rm certyaml.exe
+          GOOS=linux   GOARCH=amd64 go build -v ./cmd/certyaml && tar zcvf certyaml-linux-amd64.tar.gz  certyaml && rm certyaml
+          GOOS=darwin  GOARCH=amd64 go build -v ./cmd/certyaml && tar zcvf certyaml-darwin-amd64.tar.gz certyaml && rm certyaml
+          GOOS=windows GOARCH=amd64 go build -v ./cmd/certyaml && zip      certyaml-windows-amd64.zip   certyaml.exe && rm certyaml.exe
 
       # https://github.com/actions/create-release
       - name: Create Release
