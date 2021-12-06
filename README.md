@@ -3,6 +3,7 @@
 Declarative way to create x509 certificates for test environments.
 
 ![](https://github.com/tsaarni/certyaml/workflows/unit-tests/badge.svg)
+[![Go Reference](https://pkg.go.dev/badge/github.com/tsaarni/certyaml.svg)](https://pkg.go.dev/github.com/tsaarni/certyaml)
 
 ## Description
 
@@ -161,4 +162,4 @@ Writing state: certs.state
 
 For using certyaml in Go applications, see [API documentation](https://pkg.go.dev/github.com/tsaarni/certyaml).
 
-For more examples on how to use the API use, see [`examples/go-api`](examples/go-api) and [`certificate_test.go`](certificate_test.go).
+For examples on how to use the API use, see [`examples/go-api`](examples/go-api) and [`certificate_test.go`](certificate_test.go).
