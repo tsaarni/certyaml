@@ -67,6 +67,10 @@ type Certificate struct {
 	// KeyEncipherment and DigitalSignature are set for end-entity certificates.
 	KeyUsage x509.KeyUsage `json:"-"`
 
+	// ExtKeyUsage defines a sequence of x509 extended key usages.
+	// Not set by default.
+	ExtKeyUsage []x509.ExtKeyUsage `json:"-"`
+
 	// Issuer refers to the issuer Certificate.
 	// Self-signed certificate is generated if Issuer is undefined (when value is nil).
 	Issuer *Certificate `json:"-" hash:"-"`
@@ -306,6 +310,7 @@ func (c *Certificate) Generate() error {
 		NotBefore:             notBefore,
 		NotAfter:              notAfter,
 		KeyUsage:              c.KeyUsage,
+		ExtKeyUsage:           c.ExtKeyUsage,
 		BasicConstraintsValid: *c.IsCA,
 		IsCA:                  *c.IsCA,
 	}

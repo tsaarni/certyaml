@@ -180,6 +180,17 @@ func TestParsingAllCertificateFields(t *testing.T) {
 		x509.KeyUsageDecipherOnly
 	assert.Equal(t, expectedKeyUsage, got.KeyUsage)
 
+	expectedExtKeyUsage := []x509.ExtKeyUsage{
+		x509.ExtKeyUsageAny,
+		x509.ExtKeyUsageServerAuth,
+		x509.ExtKeyUsageClientAuth,
+		x509.ExtKeyUsageCodeSigning,
+		x509.ExtKeyUsageEmailProtection,
+		x509.ExtKeyUsageTimeStamping,
+		x509.ExtKeyUsageOCSPSigning,
+	}
+	assert.Equal(t, expectedExtKeyUsage, got.ExtKeyUsage)
+
 	assert.True(t, got.IsCA)
 
 	assert.Equal(t, x509.RSA, got.PublicKeyAlgorithm)
