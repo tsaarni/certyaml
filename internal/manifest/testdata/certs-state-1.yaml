@@ -12,7 +12,7 @@ sans:
 ---
 subject: cn=selfsigned-server
 ca: false
-key_usage:
+key_usages:
 - KeyEncipherment
 - DigitalSignature
 ---

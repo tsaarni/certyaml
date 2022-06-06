@@ -122,8 +122,12 @@ func TestInvalidIssuer(t *testing.T) {
 }
 
 func TestInvalidManifest(t *testing.T) {
+	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
+	assert.Nil(t, err)
+	defer os.RemoveAll(dir)
+
 	var output bytes.Buffer
-	err := GenerateCertificates(&output, "testdata/non-existing-manifest.yaml", "", "")
+	err = GenerateCertificates(&output, "testdata/certs-invalid-field.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.NotNil(t, err)
 }
 
@@ -133,6 +137,12 @@ func TestInvalidDestinationDir(t *testing.T) {
 	defer os.RemoveAll(dir)
 	var output bytes.Buffer
 	err = GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), "non-existing-dir")
+	assert.NotNil(t, err)
+}
+
+func TestMissingManifest(t *testing.T) {
+	var output bytes.Buffer
+	err := GenerateCertificates(&output, "testdata/non-existing-manifest.yaml", "", "")
 	assert.NotNil(t, err)
 }
 
