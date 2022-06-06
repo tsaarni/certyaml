@@ -90,7 +90,7 @@ func GenerateCertificates(output io.Writer, manifestFile, stateFile, destDir str
 	scanner.Split(splitByDocument)
 	for scanner.Scan() {
 		c := CertificateManifest{}
-		err := yaml.Unmarshal(scanner.Bytes(), &c)
+		err := yaml.UnmarshalStrict(scanner.Bytes(), &c)
 		if err != nil {
 			return fmt.Errorf("error while decoding: %s", err)
 		}
