@@ -110,6 +110,13 @@ func TestKeyUsage(t *testing.T) {
 	assert.Equal(t, x509.KeyUsageDigitalSignature|x509.KeyUsageContentCommitment|x509.KeyUsageKeyEncipherment|x509.KeyUsageDataEncipherment|x509.KeyUsageKeyAgreement|x509.KeyUsageCertSign|x509.KeyUsageCRLSign|x509.KeyUsageEncipherOnly|x509.KeyUsageDecipherOnly, got.KeyUsage)
 }
 
+func TestExtendedKeyUsage(t *testing.T) {
+	input := Certificate{Subject: "CN=Joe", ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageCodeSigning}}
+	got, err := input.X509Certificate()
+	assert.Nil(t, err)
+	assert.Equal(t, []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageCodeSigning}, got.ExtKeyUsage)
+}
+
 func TestIssuer(t *testing.T) {
 	input1 := Certificate{Subject: "CN=Joe"}
 	got, err := input1.X509Certificate()

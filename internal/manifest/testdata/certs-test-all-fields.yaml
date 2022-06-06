@@ -17,6 +17,14 @@ key_usages:
 - CRLSign
 - EncipherOnly
 - DecipherOnly
+ext_key_usages:
+- Any
+- ServerAuth
+- ClientAuth
+- CodeSigning
+- EmailProtection
+- TimeStamping
+- OCSPSigning
 issuer: cn=ca
 ca: true
 not_before: 2020-01-01T09:00:00Z

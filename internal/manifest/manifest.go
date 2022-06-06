@@ -50,11 +50,12 @@ type Manifest struct {
 type CertificateManifest struct {
 	api.Certificate
 
-	KeyTypeAsString   string   `json:"key_type"`
-	KeyUsagesAsString []string `json:"key_usages"`
-	ExpiresAsString   string   `json:"expires"`
-	IssuerAsString    string   `json:"issuer"`
-	Filename          string   `json:"filename"`
+	KeyTypeAsString      string   `json:"key_type"`
+	KeyUsagesAsString    []string `json:"key_usages"`
+	ExtKeyUsagesAsString []string `json:"ext_key_usages"`
+	ExpiresAsString      string   `json:"expires"`
+	IssuerAsString       string   `json:"issuer"`
+	Filename             string   `json:"filename"`
 }
 
 func (c *CertificateManifest) hash() string {
@@ -196,6 +197,14 @@ func (m *Manifest) processCertificate(c *CertificateManifest) error {
 		c.KeyUsage = usage
 	}
 
+	if len(c.ExtKeyUsagesAsString) > 0 {
+		usage, err := getExtKeyUsage(c.ExtKeyUsagesAsString)
+		if err != nil {
+			return err
+		}
+		c.ExtKeyUsage = usage
+	}
+
 	// Try to load previously generated certificate and key, which might not exists, so ignore errors.
 	certOnDisk, err := tls.LoadX509KeyPair(path.Join(m.dataDir, c.Filename+".pem"), path.Join(m.dataDir, c.Filename+"-key.pem"))
 	if err == nil {
@@ -242,6 +251,29 @@ func getKeyUsage(keyUsage []string) (x509.KeyUsage, error) {
 			return result, fmt.Errorf("key_usages contains invalid value: %s", usage)
 		}
 		result |= ku
+	}
+
+	return result, nil
+}
+
+func getExtKeyUsage(extKeyUsage []string) ([]x509.ExtKeyUsage, error) {
+	var result []x509.ExtKeyUsage
+	var usages = map[string]x509.ExtKeyUsage{
+		"Any":             x509.ExtKeyUsageAny,
+		"ServerAuth":      x509.ExtKeyUsageServerAuth,
+		"ClientAuth":      x509.ExtKeyUsageClientAuth,
+		"CodeSigning":     x509.ExtKeyUsageCodeSigning,
+		"EmailProtection": x509.ExtKeyUsageEmailProtection,
+		"TimeStamping":    x509.ExtKeyUsageTimeStamping,
+		"OCSPSigning":     x509.ExtKeyUsageOCSPSigning,
+	}
+
+	for _, usage := range extKeyUsage {
+		ku, ok := usages[usage]
+		if !ok {
+			return nil, fmt.Errorf("ext_key_usages contains invalid value: %s", usage)
+		}
+		result = append(result, ku)
 	}
 
 	return result, nil
