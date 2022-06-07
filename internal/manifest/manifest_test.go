@@ -186,8 +186,15 @@ func TestParsingAllCertificateFields(t *testing.T) {
 		x509.ExtKeyUsageClientAuth,
 		x509.ExtKeyUsageCodeSigning,
 		x509.ExtKeyUsageEmailProtection,
+		x509.ExtKeyUsageIPSECEndSystem,
+		x509.ExtKeyUsageIPSECTunnel,
+		x509.ExtKeyUsageIPSECUser,
 		x509.ExtKeyUsageTimeStamping,
 		x509.ExtKeyUsageOCSPSigning,
+		x509.ExtKeyUsageMicrosoftServerGatedCrypto,
+		x509.ExtKeyUsageNetscapeServerGatedCrypto,
+		x509.ExtKeyUsageMicrosoftCommercialCodeSigning,
+		x509.ExtKeyUsageMicrosoftKernelCodeSigning,
 	}
 	assert.Equal(t, expectedExtKeyUsage, got.ExtKeyUsage)
 
