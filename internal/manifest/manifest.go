@@ -256,16 +256,24 @@ func getKeyUsage(keyUsage []string) (x509.KeyUsage, error) {
 	return result, nil
 }
 
+// getExtKeyUsage converts extended key usage string representation to X509.ExtKeyUsage
 func getExtKeyUsage(extKeyUsage []string) ([]x509.ExtKeyUsage, error) {
 	var result []x509.ExtKeyUsage
 	var usages = map[string]x509.ExtKeyUsage{
-		"Any":             x509.ExtKeyUsageAny,
-		"ServerAuth":      x509.ExtKeyUsageServerAuth,
-		"ClientAuth":      x509.ExtKeyUsageClientAuth,
-		"CodeSigning":     x509.ExtKeyUsageCodeSigning,
-		"EmailProtection": x509.ExtKeyUsageEmailProtection,
-		"TimeStamping":    x509.ExtKeyUsageTimeStamping,
-		"OCSPSigning":     x509.ExtKeyUsageOCSPSigning,
+		"Any":                            x509.ExtKeyUsageAny,
+		"ServerAuth":                     x509.ExtKeyUsageServerAuth,
+		"ClientAuth":                     x509.ExtKeyUsageClientAuth,
+		"CodeSigning":                    x509.ExtKeyUsageCodeSigning,
+		"EmailProtection":                x509.ExtKeyUsageEmailProtection,
+		"IPSECEndSystem":                 x509.ExtKeyUsageIPSECEndSystem,
+		"IPSECTunnel":                    x509.ExtKeyUsageIPSECTunnel,
+		"IPSECUser":                      x509.ExtKeyUsageIPSECUser,
+		"TimeStamping":                   x509.ExtKeyUsageTimeStamping,
+		"OCSPSigning":                    x509.ExtKeyUsageOCSPSigning,
+		"MicrosoftServerGatedCrypto":     x509.ExtKeyUsageMicrosoftServerGatedCrypto,
+		"NetscapeServerGatedCrypto":      x509.ExtKeyUsageNetscapeServerGatedCrypto,
+		"MicrosoftCommercialCodeSigning": x509.ExtKeyUsageMicrosoftCommercialCodeSigning,
+		"MicrosoftKernelCodeSigning":     x509.ExtKeyUsageMicrosoftKernelCodeSigning,
 	}
 
 	for _, usage := range extKeyUsage {

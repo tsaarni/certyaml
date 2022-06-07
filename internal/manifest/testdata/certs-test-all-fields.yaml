@@ -23,8 +23,15 @@ ext_key_usages:
 - ClientAuth
 - CodeSigning
 - EmailProtection
+- IPSECEndSystem
+- IPSECTunnel
+- IPSECUser
 - TimeStamping
 - OCSPSigning
+- MicrosoftServerGatedCrypto
+- NetscapeServerGatedCrypto
+- MicrosoftCommercialCodeSigning
+- MicrosoftKernelCodeSigning
 issuer: cn=ca
 ca: true
 not_before: 2020-01-01T09:00:00Z
