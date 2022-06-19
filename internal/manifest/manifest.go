@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"path"
 	"path/filepath"
@@ -56,6 +57,7 @@ type CertificateManifest struct {
 	ExpiresAsString      string   `json:"expires"`
 	IssuerAsString       string   `json:"issuer"`
 	Filename             string   `json:"filename"`
+	SerialNumberAsInt    *int64   `json:"serial"`
 }
 
 func (c *CertificateManifest) hash() string {
@@ -203,6 +205,10 @@ func (m *Manifest) processCertificate(c *CertificateManifest) error {
 			return err
 		}
 		c.ExtKeyUsage = usage
+	}
+
+	if c.SerialNumberAsInt != nil {
+		c.SerialNumber = big.NewInt(*c.SerialNumberAsInt)
 	}
 
 	// Try to load previously generated certificate and key, which might not exists, so ignore errors.
