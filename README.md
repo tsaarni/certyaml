@@ -146,7 +146,7 @@ Writing state: certs.state
 
 | tag | description | examples |
 | --- | ----------- | -------- |
-| subject | Distinguished name for the certificate. `subject` is the only mandatory field. | `CN=Joe` |
+| subject | Distinguished name for the certificate. `subject` is the only mandatory field and it must be unique. | `CN=Joe` |
 | sans | List of values for x509 Subject Alternative Name extension. | `DNS:www.example.com`, `IP:1.2.3.4`, `URI:https://www.example.com` |
 | key_type | Certificate key algorithm. Default value is `EC` (elliptic curve). | `EC` or `RSA` |
 | key_size | The key length in bits. Default value is 256 if `key_size` is not defined. | For key_type EC: `256`, `384`, `521`. For key_type RSA: `1024`, `2048`, `4096` |
@@ -159,6 +159,7 @@ Writing state: certs.state
 | not_before | Certificate is not valid before this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)) | `2020-01-01T09:00:00Z` |
 | not_after | Certificate is not valid after this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)) | `2020-01-01T09:00:00Z` |
 | serial | Serial number for the certificate. Default value is current time in nanoseconds. | `123` |
+| revoked | When `true` the serial number of the certificate will be written in `[issuer]-crl.pem`.  Default value is `false`. The file will be written only if at least one certificate is revoked. CRL `ThisUpdate` is set to current time and `NextUpdate` one week after. Self-signed certificates cannot be revoked. | `true`, `false` |
 
 ## Go API
 

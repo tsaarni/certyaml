@@ -21,6 +21,7 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"io/ioutil"
 	"math/big"
 	"net"
@@ -237,4 +238,50 @@ func TestParsingAllCertificateFields(t *testing.T) {
 	assert.Empty(t, got.IPAddresses)
 
 	assert.Equal(t, big.NewInt(123), got.SerialNumber)
+}
+
+func TestRevocation(t *testing.T) {
+	dir, err := ioutil.TempDir("/tmp", "certyaml-unittest")
+	assert.Nil(t, err)
+	defer os.RemoveAll(dir)
+
+	var output bytes.Buffer
+	err = GenerateCertificates(&output, "testdata/certs-revocation.yaml", path.Join(dir, "state.yaml"), dir)
+	assert.Nil(t, err)
+
+	crlFile := path.Join(dir, "ca1-crl.pem")
+	pemBuffer, err := os.ReadFile(crlFile)
+	assert.Nil(t, err)
+	block, rest := pem.Decode(pemBuffer)
+	assert.NotNil(t, block)
+	assert.Equal(t, "X509 CRL", block.Type)
+	assert.Empty(t, rest)
+	certList, err := x509.ParseCRL(block.Bytes)
+	assert.Nil(t, err)
+	assert.Equal(t, "CN=ca1", certList.TBSCertList.Issuer.String())
+	assert.Equal(t, 1, len(certList.TBSCertList.RevokedCertificates))
+	assert.Equal(t, big.NewInt(123), certList.TBSCertList.RevokedCertificates[0].SerialNumber)
+
+	crlFile = path.Join(dir, "ca2-crl.pem")
+	pemBuffer, err = os.ReadFile(crlFile)
+	assert.Nil(t, err)
+	block, rest = pem.Decode(pemBuffer)
+	assert.NotNil(t, block)
+	assert.Equal(t, "X509 CRL", block.Type)
+	assert.Empty(t, rest)
+	certList, err = x509.ParseCRL(block.Bytes)
+	assert.Nil(t, err)
+	assert.Equal(t, "CN=ca2", certList.TBSCertList.Issuer.String())
+	assert.Equal(t, 2, len(certList.TBSCertList.RevokedCertificates))
+	assert.Equal(t, big.NewInt(123), certList.TBSCertList.RevokedCertificates[0].SerialNumber)
+	assert.Equal(t, big.NewInt(456), certList.TBSCertList.RevokedCertificates[1].SerialNumber)
+}
+
+func TestInvalidRevocation(t *testing.T) {
+	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
+	assert.Nil(t, err)
+	defer os.RemoveAll(dir)
+	var output bytes.Buffer
+	err = GenerateCertificates(&output, "testdata/cert-invalid-revoke-self-signed.yaml", path.Join(dir, "state.yaml"), dir)
+	assert.NotNil(t, err)
 }
