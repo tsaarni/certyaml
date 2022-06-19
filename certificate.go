@@ -137,6 +137,17 @@ func (c *Certificate) PublicKey() (crypto.PublicKey, error) {
 	return c.GeneratedCert.PrivateKey.(crypto.Signer).Public(), nil
 }
 
+// PrivateKey returns crypto.Signer that represents the PrivateKey associated to the Certificate.
+// A key pair and certificate will be generated at first call of any Certificate functions.
+// Error is not nil if generation fails.
+func (c *Certificate) PrivateKey() (crypto.Signer, error) {
+	err := c.ensureGenerated()
+	if err != nil {
+		return nil, err
+	}
+	return c.GeneratedCert.PrivateKey.(crypto.Signer), nil
+}
+
 // PEM returns the Certificate as certificate and private key PEM buffers.
 // A key pair and certificate will be generated at first call of any Certificate functions.
 // Error is not nil if generation fails.

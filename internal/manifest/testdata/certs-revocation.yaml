@@ -1,0 +1,18 @@
+subject: CN=ca1
+---
+subject: CN=server
+issuer: CN=ca1
+serial: 123
+revoked: true
+---
+subject: CN=ca2
+---
+subject: CN=server
+issuer: CN=ca2
+serial: 123
+revoked: true
+---
+subject: CN=client
+issuer: CN=ca2
+serial: 456
+revoked: true

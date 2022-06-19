@@ -159,6 +159,7 @@ Writing state: certs.state
 | not_before | Certificate is not valid before this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)) | `2020-01-01T09:00:00Z` |
 | not_after | Certificate is not valid after this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)) | `2020-01-01T09:00:00Z` |
 | serial | Serial number for the certificate. Default value is current time in nanoseconds. | `123` |
+| revoked | When `true` the serial number of the certificate will be written in `[issuer]-crl.pem`.  Default value is `false`. The file will be written only if at least one certificate is revoked. CRL `ThisUpdate` is set to current time and `NextUpdate` one week after. Self-signed certificates cannot be revoked. | `true`, `false` |
 
 ## Go API
 
