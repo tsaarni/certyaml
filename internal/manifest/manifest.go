@@ -58,6 +58,7 @@ type CertificateManifest struct {
 	IssuerAsString       string   `json:"issuer"`
 	Filename             string   `json:"filename"`
 	SerialNumberAsInt    *int64   `json:"serial"`
+	Revoked              bool     `json:"revoked"`
 }
 
 func (c *CertificateManifest) hash() string {
@@ -87,6 +88,9 @@ func GenerateCertificates(output io.Writer, manifestFile, stateFile, destDir str
 	if err != nil {
 		return fmt.Errorf("error while parsing certificate state file: %s", err)
 	}
+
+	// Map of CLRs, indexed by issuing CAs subject name.
+	revocationLists := map[string]*api.CRL{}
 
 	// Parse multi-document YAML file
 	scanner := bufio.NewScanner(f)
@@ -130,6 +134,36 @@ func GenerateCertificates(output io.Writer, manifestFile, stateFile, destDir str
 			return fmt.Errorf("error while saving certificate: %s", err)
 		}
 		m.certs[c.Subject] = &c
+
+		// If revoked, add to existing revocation list or create new one.
+		if c.Revoked {
+			issuer := c.Issuer
+			if issuer == nil {
+				return fmt.Errorf("cannot revoke self-signed certificate: %s", c.Subject)
+			}
+			// Does revocation list already exist for this CA?
+			crl, ok := revocationLists[issuer.Subject]
+			// If not, create new CRL.
+			if !ok {
+				crl = &api.CRL{}
+			}
+			err := crl.Add(&c.Certificate)
+			if err != nil {
+				return err
+			}
+			revocationLists[issuer.Subject] = crl
+		}
+	}
+
+	// Write CRLs to PEM files.
+	for _, crl := range revocationLists {
+		issuer := m.certs[crl.Revoked[0].Issuer.Subject]
+		crlFile := path.Join(m.dataDir, issuer.Filename+"-crl.pem")
+		fmt.Fprintf(output, "Writing CRL: %s\n", crlFile)
+		err := crl.WritePEM(crlFile)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Write hashes to state file.
