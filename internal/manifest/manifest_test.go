@@ -22,6 +22,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
+	"math/big"
 	"net"
 	"net/url"
 	"os"
@@ -234,4 +235,6 @@ func TestParsingAllCertificateFields(t *testing.T) {
 	assert.Empty(t, got.DNSNames)
 	assert.Empty(t, got.URIs)
 	assert.Empty(t, got.IPAddresses)
+
+	assert.Equal(t, big.NewInt(123), got.SerialNumber)
 }

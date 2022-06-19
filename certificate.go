@@ -87,6 +87,10 @@ type Certificate struct {
 	// Default value is current time +  Expires if NotAfter is undefined (when value is nil)
 	NotAfter *time.Time `json:"not_after"`
 
+	// SerialNumber defines serial number for the certificate.
+	// If not set, the default value is current time in nanoseconds.
+	SerialNumber *big.Int `json:"-" hash:"-"`
+
 	// GeneratedCert is a pointer to the generated certificate and private key.
 	// It is automatically set after calling any of the Certificate functions.
 	GeneratedCert *tls.Certificate `json:"-" hash:"-"`
@@ -230,6 +234,10 @@ func (c *Certificate) defaults() error {
 		}
 	}
 
+	if c.SerialNumber == nil {
+		c.SerialNumber = big.NewInt(time.Now().UnixNano())
+	}
+
 	return nil
 }
 
@@ -305,7 +313,7 @@ func (c *Certificate) Generate() error {
 	name, _ := x500dn.ParseDN(c.Subject)
 
 	template := &x509.Certificate{
-		SerialNumber:          big.NewInt(time.Now().UnixNano()),
+		SerialNumber:          c.SerialNumber,
 		Subject:               *name,
 		NotBefore:             notBefore,
 		NotAfter:              notAfter,

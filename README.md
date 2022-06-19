@@ -158,6 +158,7 @@ Writing state: certs.state
 | ca | Set certificate is / is not CA. If `ca` is not defined, `true` is set by default for self-signed certificates. | `true` or  `false` |
 | not_before | Certificate is not valid before this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)) | `2020-01-01T09:00:00Z` |
 | not_after | Certificate is not valid after this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)) | `2020-01-01T09:00:00Z` |
+| serial | Serial number for the certificate. Default value is current time in nanoseconds. | `123` |
 
 ## Go API
 
