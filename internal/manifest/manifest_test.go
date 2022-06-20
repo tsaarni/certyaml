@@ -45,7 +45,7 @@ func TestManifestHandling(t *testing.T) {
 	err = GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.Nil(t, err)
 
-	wantFiles := []string{
+	wantFiles(t, dir,
 		"client-root-ca-key.pem",
 		"client-root-ca.pem",
 		"clientcert-key.pem",
@@ -63,9 +63,10 @@ func TestManifestHandling(t *testing.T) {
 		"shortlived-key.pem",
 		"shortlived.pem",
 		"state.yaml",
-	}
+	)
+}
 
-	// Check that files got generated.
+func wantFiles(t *testing.T, dir string, wantFiles ...string) {
 	fileInfos, err := ioutil.ReadDir(dir)
 	assert.Nil(t, err)
 	var gotFiles []string
@@ -73,7 +74,7 @@ func TestManifestHandling(t *testing.T) {
 		gotFiles = append(gotFiles, file.Name())
 	}
 	sort.Strings(gotFiles)
-	assert.Equal(t, wantFiles, gotFiles)
+	assert.ElementsMatch(t, wantFiles, gotFiles)
 }
 
 func TestStateHandling(t *testing.T) {
@@ -120,7 +121,7 @@ func TestInvalidIssuer(t *testing.T) {
 	defer os.RemoveAll(dir)
 	var output bytes.Buffer
 	err = GenerateCertificates(&output, "testdata/certs-invalid-issuer.yaml", path.Join(dir, "state.yaml"), dir)
-	assert.NotNil(t, err)
+	assert.ErrorContains(t, err, "issuer field defined but CA certificate `cn=issuer-does-not-exist` not found")
 }
 
 func TestInvalidManifest(t *testing.T) {
@@ -130,7 +131,7 @@ func TestInvalidManifest(t *testing.T) {
 
 	var output bytes.Buffer
 	err = GenerateCertificates(&output, "testdata/certs-invalid-field.yaml", path.Join(dir, "state.yaml"), dir)
-	assert.NotNil(t, err)
+	assert.ErrorContains(t, err, "error while decoding")
 }
 
 func TestInvalidDestinationDir(t *testing.T) {
@@ -139,13 +140,13 @@ func TestInvalidDestinationDir(t *testing.T) {
 	defer os.RemoveAll(dir)
 	var output bytes.Buffer
 	err = GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), "non-existing-dir")
-	assert.NotNil(t, err)
+	assert.ErrorContains(t, err, "error while saving certificate")
 }
 
 func TestMissingManifest(t *testing.T) {
 	var output bytes.Buffer
 	err := GenerateCertificates(&output, "testdata/non-existing-manifest.yaml", "", "")
-	assert.NotNil(t, err)
+	assert.ErrorContains(t, err, "cannot read certificate manifest file")
 }
 
 func TestParsingAllCertificateFields(t *testing.T) {
@@ -249,7 +250,32 @@ func TestRevocation(t *testing.T) {
 	err = GenerateCertificates(&output, "testdata/certs-revocation.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.Nil(t, err)
 
-	crlFile := path.Join(dir, "ca1-crl.pem")
+	wantCRL(t, path.Join(dir, "ca1-crl.pem"), "CN=ca1", 123)
+	wantCRL(t, path.Join(dir, "ca2-crl.pem"), "CN=ca2", 123, 456)
+}
+
+func TestInvalidRevokeSelfSigned(t *testing.T) {
+	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
+	assert.Nil(t, err)
+	defer os.RemoveAll(dir)
+	var output bytes.Buffer
+	err = GenerateCertificates(&output, "testdata/certs-invalid-revoke-self-signed.yaml", path.Join(dir, "state.yaml"), dir)
+	assert.ErrorContains(t, err, "cannot revoke self-signed certificate")
+}
+
+func TestRevokeSubCa(t *testing.T) {
+	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
+	assert.Nil(t, err)
+	defer os.RemoveAll(dir)
+	var output bytes.Buffer
+	err = GenerateCertificates(&output, "testdata/certs-revoke-subca.yaml", path.Join(dir, "state.yaml"), dir)
+	assert.Nil(t, err)
+
+	wantCRL(t, path.Join(dir, "root-ca-crl.pem"), "CN=root-ca", 123)
+	wantCRL(t, path.Join(dir, "sub-ca-crl.pem"), "CN=sub-ca", 456)
+}
+
+func wantCRL(t *testing.T, crlFile string, issuer string, serials ...int64) {
 	pemBuffer, err := os.ReadFile(crlFile)
 	assert.Nil(t, err)
 	block, rest := pem.Decode(pemBuffer)
@@ -258,30 +284,32 @@ func TestRevocation(t *testing.T) {
 	assert.Empty(t, rest)
 	certList, err := x509.ParseCRL(block.Bytes)
 	assert.Nil(t, err)
-	assert.Equal(t, "CN=ca1", certList.TBSCertList.Issuer.String())
-	assert.Equal(t, 1, len(certList.TBSCertList.RevokedCertificates))
-	assert.Equal(t, big.NewInt(123), certList.TBSCertList.RevokedCertificates[0].SerialNumber)
-
-	crlFile = path.Join(dir, "ca2-crl.pem")
-	pemBuffer, err = os.ReadFile(crlFile)
-	assert.Nil(t, err)
-	block, rest = pem.Decode(pemBuffer)
-	assert.NotNil(t, block)
-	assert.Equal(t, "X509 CRL", block.Type)
-	assert.Empty(t, rest)
-	certList, err = x509.ParseCRL(block.Bytes)
-	assert.Nil(t, err)
-	assert.Equal(t, "CN=ca2", certList.TBSCertList.Issuer.String())
-	assert.Equal(t, 2, len(certList.TBSCertList.RevokedCertificates))
-	assert.Equal(t, big.NewInt(123), certList.TBSCertList.RevokedCertificates[0].SerialNumber)
-	assert.Equal(t, big.NewInt(456), certList.TBSCertList.RevokedCertificates[1].SerialNumber)
+	assert.Equal(t, issuer, certList.TBSCertList.Issuer.String())
+	assert.Equal(t, len(serials), len(certList.TBSCertList.RevokedCertificates))
+	for i, s := range serials {
+		assert.Equal(t, big.NewInt(s), certList.TBSCertList.RevokedCertificates[i].SerialNumber)
+	}
 }
 
-func TestInvalidRevocation(t *testing.T) {
+func TestDuplicateSubjectWithExplicitFilename(t *testing.T) {
 	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 	var output bytes.Buffer
-	err = GenerateCertificates(&output, "testdata/cert-invalid-revoke-self-signed.yaml", path.Join(dir, "state.yaml"), dir)
-	assert.NotNil(t, err)
+	err = GenerateCertificates(&output, "testdata/certs-duplicate-subject.yaml", path.Join(dir, "state.yaml"), dir)
+	assert.Nil(t, err)
+	wantFiles(t, dir,
+		"joe.pem", "joe-key.pem",
+		"joe2.pem", "joe2-key.pem",
+		"state.yaml",
+	)
+}
+
+func TestInvalidDuplicateSubject(t *testing.T) {
+	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
+	assert.Nil(t, err)
+	defer os.RemoveAll(dir)
+	var output bytes.Buffer
+	err = GenerateCertificates(&output, "testdata/certs-invalid-duplicate-subject.yaml", path.Join(dir, "state.yaml"), dir)
+	assert.ErrorContains(t, err, "duplicate entry in manifest")
 }

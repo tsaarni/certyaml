@@ -1,0 +1,16 @@
+subject: CN=root-ca
+---
+subject: CN=sub-ca
+issuer: CN=root-ca
+ca: true
+---
+subject: CN=revoked-ca
+issuer: CN=root-ca
+ca: true
+serial: 123
+revoked: true
+---
+subject: CN=revoked-end-entity
+issuer: CN=sub-ca
+serial: 456
+revoked: true

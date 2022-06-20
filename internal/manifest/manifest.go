@@ -89,6 +89,9 @@ func GenerateCertificates(output io.Writer, manifestFile, stateFile, destDir str
 		return fmt.Errorf("error while parsing certificate state file: %s", err)
 	}
 
+	// Map of filenames where certificates were written, to catch duplicate entries in manifest.
+	uniqueFilenames := map[string]bool{}
+
 	// Map of CLRs, indexed by issuing CAs subject name.
 	revocationLists := map[string]*api.CRL{}
 
@@ -106,6 +109,12 @@ func GenerateCertificates(output io.Writer, manifestFile, stateFile, destDir str
 		if err != nil {
 			return err
 		}
+
+		_, subjectSeen := uniqueFilenames[c.Filename]
+		if subjectSeen {
+			return fmt.Errorf("duplicate entry in manifest: cannot write %s to %s", c.Subject, c.Filename)
+		}
+		uniqueFilenames[c.Filename] = true
 
 		// Compare hash from state file to hash of the loaded certificate.
 		hash, ok := m.hashes[c.Subject]
