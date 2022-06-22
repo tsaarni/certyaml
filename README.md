@@ -156,8 +156,8 @@ Writing state: certs.state
 | issuer | Distinguished name of the issuer. Issuer must be declared as a certificate in the manifest file before referring to it as issuer. Self-signed certificate is generated if `issuer` is not defined. | `CN=myca` |
 | filename | The basename of the generated certificate and private key files. The files created to destination directory will be [filename].pem and [filename]-key.pem will. If `filename` is not defined, CN field value from subject will be used as filename. | `clientcert` |
 | ca | Set certificate is / is not CA. If `ca` is not defined, `true` is set by default for self-signed certificates. | `true` or  `false` |
-| not_before | Certificate is not valid before this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)) | `2020-01-01T09:00:00Z` |
-| not_after | Certificate is not valid after this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)) | `2020-01-01T09:00:00Z` |
+| not_before | Certificate is not valid before this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)). | `2020-01-01T09:00:00Z` |
+| not_after | Certificate is not valid after this time ([RFC3339 timestamp](https://tools.ietf.org/html/rfc3339)). | `2020-01-01T09:00:00Z` |
 | serial | Serial number for the certificate. Default value is current time in nanoseconds. | `123` |
 | revoked | When `true` the serial number of the certificate will be written in `[issuer]-crl.pem`.  Default value is `false`. The file will be written only if at least one certificate is revoked. CRL `ThisUpdate` is set to current time and `NextUpdate` one week after. Self-signed certificates cannot be revoked. | `true`, `false` |
 
