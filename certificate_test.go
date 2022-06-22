@@ -349,3 +349,56 @@ func TestSerial(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotEqual(t, got1.SerialNumber, got2.SerialNumber)
 }
+
+func TestCertificateChain(t *testing.T) {
+	isCA := true
+	rootCA := Certificate{Subject: "CN=ca"}
+	subCA1 := Certificate{Subject: "CN=sub-ca-1", Issuer: &rootCA, IsCA: &isCA}
+	subCA2 := Certificate{Subject: "CN=sub-ca-2", Issuer: &subCA1, IsCA: &isCA}
+	endEntity := Certificate{Subject: "CN=end-entity", Issuer: &subCA2}
+
+	// End-entity certificates have certificate chains appended.
+	got, err := endEntity.TLSCertificate()
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(got.Certificate))
+	assert.Equal(t, endEntity.GeneratedCert.Certificate[0], got.Certificate[0])
+	assert.Equal(t, subCA2.GeneratedCert.Certificate[0], got.Certificate[1])
+	assert.Equal(t, subCA1.GeneratedCert.Certificate[0], got.Certificate[2])
+
+	// CA certificates do not have chains appended.
+	got, err = subCA2.TLSCertificate()
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(got.Certificate))
+}
+
+func TestCertificateChainInPEM(t *testing.T) {
+	isCA := true
+	rootCA := Certificate{Subject: "CN=ca"}
+	subCA1 := Certificate{Subject: "CN=sub-ca-1", Issuer: &rootCA, IsCA: &isCA}
+	subCA2 := Certificate{Subject: "CN=sub-ca-2", Issuer: &subCA1, IsCA: &isCA}
+	endEntity := Certificate{Subject: "CN=end-entity", Issuer: &subCA2}
+
+	// End-entity certificates have certificate chains appended.
+	got, _, err := endEntity.PEM()
+	assert.Nil(t, err)
+
+	block, rest := pem.Decode(got)
+	assert.NotNil(t, block)
+	cert, err := x509.ParseCertificate(block.Bytes)
+	assert.Nil(t, err)
+	assert.Equal(t, "CN=end-entity", cert.Subject.String())
+
+	block, rest = pem.Decode(rest)
+	assert.NotNil(t, block)
+	cert, err = x509.ParseCertificate(block.Bytes)
+	assert.Nil(t, err)
+	assert.Equal(t, "CN=sub-ca-2", cert.Subject.String())
+
+	block, rest = pem.Decode(rest)
+	assert.NotNil(t, block)
+	cert, err = x509.ParseCertificate(block.Bytes)
+	assert.Nil(t, err)
+	assert.Equal(t, "CN=sub-ca-1", cert.Subject.String())
+
+	assert.Empty(t, rest)
+}
