@@ -73,4 +73,28 @@ func TestInvalidIssuers(t *testing.T) {
 	assert.Nil(t, err)
 	err = crl.Add(&input2)
 	assert.NotNil(t, err)
+
+	// Explicitly set issuer but add certificates issued by different CA.
+	crl = CRL{Issuer: &ca1, Revoked: []*Certificate{&input2}}
+	_, err = crl.DER()
+	assert.NotNil(t, err)
+
+}
+
+func TestEmptyCRL(t *testing.T) {
+	// Empty CRL can be created by explicitly defining Issuer.
+	ca := Certificate{Subject: "CN=ca"}
+	crl := CRL{Issuer: &ca}
+	crlBytes, err := crl.DER()
+	assert.Nil(t, err)
+
+	certList, err := x509.ParseCRL(crlBytes)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(certList.TBSCertList.RevokedCertificates))
+	assert.Equal(t, "CN=ca", certList.TBSCertList.Issuer.String())
+
+	// Empty CRL with no issuer cannot be created.
+	crl = CRL{}
+	_, err = crl.DER()
+	assert.NotNil(t, err)
 }

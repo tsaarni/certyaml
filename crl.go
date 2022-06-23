@@ -38,6 +38,10 @@ type CRL struct {
 	// All Certificates must be issued by the same Issuer.
 	// Self-signed certificates cannot be added.
 	Revoked []*Certificate
+
+	// Issuer is the CA certificate issuing this CRL.
+	// If not set, it defaults to the issuer of certificates added to Revoked list.
+	Issuer *Certificate
 }
 
 // Add appends a Certificate to CRL list.
@@ -58,8 +62,11 @@ func (crl *CRL) Add(cert *Certificate) error {
 // DER returns the CRL as DER buffer.
 // Error is not nil if generation fails.
 func (crl *CRL) DER() (crlBytes []byte, err error) {
-	if len(crl.Revoked) == 0 {
-		return nil, fmt.Errorf("certificates have not been added to CRL")
+	if crl.Issuer == nil {
+		if len(crl.Revoked) == 0 {
+			return nil, fmt.Errorf("Issuer not known: either set Issuer or add certificates to the CRL")
+		}
+		crl.Issuer = crl.Revoked[0].Issuer
 	}
 
 	effectiveRevocationTime := time.Now()
@@ -73,8 +80,6 @@ func (crl *CRL) DER() (crlBytes []byte, err error) {
 		effectiveExpiry = *crl.NextUpdate
 	}
 
-	issuer := crl.Revoked[0].Issuer
-
 	var revokedCerts []pkix.RevokedCertificate
 	for _, c := range crl.Revoked {
 		err := c.ensureGenerated()
@@ -83,8 +88,8 @@ func (crl *CRL) DER() (crlBytes []byte, err error) {
 		}
 		if c.Issuer == nil {
 			return nil, fmt.Errorf("cannot revoke self-signed certificate: %s", c.Subject)
-		} else if c.Issuer != issuer {
-			return nil, fmt.Errorf("CRL can contain certificates for single issuer only")
+		} else if c.Issuer != crl.Issuer {
+			return nil, fmt.Errorf("revoked certificates added from several issuers, or certificate does not match explicitly set Issuer")
 		}
 		revokedCerts = append(revokedCerts, pkix.RevokedCertificate{
 			SerialNumber:   c.SerialNumber,
@@ -92,12 +97,12 @@ func (crl *CRL) DER() (crlBytes []byte, err error) {
 		})
 	}
 
-	ca, err := issuer.X509Certificate()
+	ca, err := crl.Issuer.X509Certificate()
 	if err != nil {
 		return nil, err
 	}
 
-	privateKey, err := issuer.PrivateKey()
+	privateKey, err := crl.Issuer.PrivateKey()
 	if err != nil {
 		return nil, err
 	}
