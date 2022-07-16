@@ -1,6 +1,7 @@
 # certyaml
 
 Declarative way to create x509 certificates for test environments.
+No more storing test certificates and private keys in the repository!
 
 ![](https://github.com/tsaarni/certyaml/workflows/unit-tests/badge.svg)
 [![Go Reference](https://pkg.go.dev/badge/github.com/tsaarni/certyaml.svg)](https://pkg.go.dev/github.com/tsaarni/certyaml)
@@ -12,6 +13,8 @@ It is similar to `openssl` or `cfssl` which can also be used for issuing certifi
 
 Certyaml is targeted for developers who need to set up a private PKI for test environments.
 It cannot be used for production environments where publicly trusted certificates are needed.
+
+If you program in Java, there is similar project with Java API called [certy](https://github.com/tsaarni/java-certy).
 
 ## Using certyaml
 
