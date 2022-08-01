@@ -1,13 +1,13 @@
 subject: CN=ca1
 ---
-subject: CN=server
+subject: CN=server1
 issuer: CN=ca1
 serial: 123
 revoked: true
 ---
 subject: CN=ca2
 ---
-subject: CN=server
+subject: CN=server2
 issuer: CN=ca2
 serial: 123
 revoked: true
