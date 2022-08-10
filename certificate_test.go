@@ -21,7 +21,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
-	"io/ioutil"
 	"math/big"
 	"net"
 	"net/url"
@@ -279,7 +278,7 @@ func TestWritingPEMFiles(t *testing.T) {
 		Issuer:  &ca,
 	}
 
-	dir, err := ioutil.TempDir("/tmp", "certyaml-unittest")
+	dir, err := os.MkdirTemp("/tmp", "certyaml-unittest")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 

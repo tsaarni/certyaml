@@ -1,6 +1,6 @@
 module github.com/tsaarni/certyaml
 
-go 1.13
+go 1.16
 
 require (
 	github.com/cnf/structhash v0.0.0-20201127153200-e1b16c1ebc08

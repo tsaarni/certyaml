@@ -22,7 +22,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
-	"io/ioutil"
 	"math/big"
 	"net"
 	"net/url"
@@ -37,7 +36,7 @@ import (
 )
 
 func TestManifestHandling(t *testing.T) {
-	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
+	dir, err := os.MkdirTemp("", "certyaml-testsuite-*")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 
@@ -66,10 +65,10 @@ func TestManifestHandling(t *testing.T) {
 	}
 
 	// Check that files got generated.
-	fileInfos, err := ioutil.ReadDir(dir)
+	dirEntries, err := os.ReadDir(dir)
 	assert.Nil(t, err)
 	var gotFiles []string
-	for _, file := range fileInfos {
+	for _, file := range dirEntries {
 		gotFiles = append(gotFiles, file.Name())
 	}
 	sort.Strings(gotFiles)
@@ -77,7 +76,7 @@ func TestManifestHandling(t *testing.T) {
 }
 
 func TestStateHandling(t *testing.T) {
-	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
+	dir, err := os.MkdirTemp("", "certyaml-testsuite-*")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 
@@ -115,7 +114,7 @@ func TestStateHandling(t *testing.T) {
 }
 
 func TestInvalidIssuer(t *testing.T) {
-	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
+	dir, err := os.MkdirTemp("", "certyaml-testsuite-*")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 	var output bytes.Buffer
@@ -124,7 +123,7 @@ func TestInvalidIssuer(t *testing.T) {
 }
 
 func TestInvalidManifest(t *testing.T) {
-	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
+	dir, err := os.MkdirTemp("", "certyaml-testsuite-*")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 
@@ -134,7 +133,7 @@ func TestInvalidManifest(t *testing.T) {
 }
 
 func TestInvalidDestinationDir(t *testing.T) {
-	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
+	dir, err := os.MkdirTemp("", "certyaml-testsuite-*")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 	var output bytes.Buffer
@@ -149,7 +148,7 @@ func TestMissingManifest(t *testing.T) {
 }
 
 func TestParsingAllCertificateFields(t *testing.T) {
-	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
+	dir, err := os.MkdirTemp("", "certyaml-testsuite-*")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 
@@ -241,7 +240,7 @@ func TestParsingAllCertificateFields(t *testing.T) {
 }
 
 func TestRevocation(t *testing.T) {
-	dir, err := ioutil.TempDir("/tmp", "certyaml-unittest")
+	dir, err := os.MkdirTemp("/tmp", "certyaml-unittest")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 
@@ -278,7 +277,7 @@ func TestRevocation(t *testing.T) {
 }
 
 func TestInvalidRevocation(t *testing.T) {
-	dir, err := ioutil.TempDir("", "certyaml-testsuite-*")
+	dir, err := os.MkdirTemp("", "certyaml-testsuite-*")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 	var output bytes.Buffer
