@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"path"
@@ -83,7 +82,7 @@ func GenerateCertificates(output io.Writer, manifestFile, stateFile, destDir str
 	// Load stored state (if any) about previously created certificates and private keys.
 	// The state file is used to determine when certificates need to be re-created.
 	fmt.Fprintf(output, "Reading certificate state file: %s\n", stateFile)
-	data, _ := ioutil.ReadFile(filepath.Clean(stateFile))
+	data, _ := os.ReadFile(filepath.Clean(stateFile))
 	err = yaml.Unmarshal(data, &m.hashes)
 	if err != nil {
 		return fmt.Errorf("error while parsing certificate state file: %s", err)
@@ -172,7 +171,7 @@ func GenerateCertificates(output io.Writer, manifestFile, stateFile, destDir str
 		return err
 	}
 	fmt.Fprintf(output, "Writing state: %s\n", stateFile)
-	err = ioutil.WriteFile(stateFile, stateYaml, 0600)
+	err = os.WriteFile(stateFile, stateYaml, 0600)
 	if err != nil {
 		return fmt.Errorf("error while writing state: %s", err)
 	}

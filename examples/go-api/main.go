@@ -65,6 +65,7 @@ func main() {
 
 				MinVersion: tls.VersionTLS13,
 			},
+			ReadHeaderTimeout: 10 * time.Second,
 		}
 
 		// Certs were provided in tls.Config so using "" as filenames.
