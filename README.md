@@ -52,7 +52,7 @@ The executable will be stored in the go path, by default `~/go/bin/certyaml`.
 Create a YAML manifest file which describes the wanted PKI hierarchy and end-entity certificates
 
 ```console
-$ cat certs.yaml <<EOF
+$ cat >certs.yaml <<EOF
 subject: cn=server-root-ca
 ---
 subject: cn=intermediate-ca
