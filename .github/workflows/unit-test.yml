@@ -14,9 +14,10 @@ jobs:
     steps:
 
     - name: Set up Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
-        go-version: '1.18.3'
+        # https://github.com/actions/go-versions/blob/main/versions-manifest.json
+        go-version: 'stable'
       id: go
 
     - uses: actions/cache@v2
@@ -29,7 +30,7 @@ jobs:
           ${{ runner.os }}-go-
 
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Get dependencies
       run: |
@@ -38,7 +39,7 @@ jobs:
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v2
       with:
-          version: v1.46.2
+          version: v1.50.1
 
     - name: Build
       run: make build
