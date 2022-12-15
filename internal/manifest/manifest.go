@@ -38,7 +38,7 @@ type Manifest struct {
 	// certs is a map from subject name to CertificateManifest.
 	certs map[string]*CertificateManifest
 
-	// hashes is a map from subject name to hash of CertificateManifest struct.
+	// hashes is a map from file name (typically subject name) to hash of CertificateManifest struct.
 	// It is stored and read from certyaml's .state file between consequent executions of certyaml.
 	hashes map[string]string
 
@@ -107,7 +107,7 @@ func GenerateCertificates(output io.Writer, manifestFile, stateFile, destDir str
 		}
 
 		// Compare hash from state file to hash of the loaded certificate.
-		hash, ok := m.hashes[c.Subject]
+		hash, ok := m.hashes[c.Filename]
 		if ok && c.GeneratedCert != nil && hash == c.hash() {
 			fmt.Fprintf(output, "No changes: skipping %s\n", c.Filename)
 			continue // Continue to next certificate in manifest.
@@ -117,12 +117,12 @@ func GenerateCertificates(output io.Writer, manifestFile, stateFile, destDir str
 		// "adopt" the existing certificate like we would have generated it.
 		if !ok && c.GeneratedCert != nil {
 			fmt.Fprintf(output, "Recognized existing certificate: skipping %s\n", c.Filename)
-			m.hashes[c.Subject] = c.hash()
+			m.hashes[c.Filename] = c.hash()
 			continue // Continue to next certificate in manifest.
 		}
 
 		// Store hash of the current state of the certificate.
-		m.hashes[c.Subject] = c.hash()
+		m.hashes[c.Filename] = c.hash()
 
 		// Write the certificate and key to data dir.
 		certFile := path.Join(m.dataDir, c.Filename+".pem")
