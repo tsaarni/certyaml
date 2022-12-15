@@ -25,6 +25,11 @@ subject: cn=shortlived
 issuer: cn=intermediate-ca
 expires: 1m
 ---
+subject: cn=shortlived
+issuer: cn=intermediate-ca
+expires: 2m
+filename: shortlived2m
+---
 subject: cn=client-root-ca
 ---
 subject: CN=John Doe,OU=People,O=Company

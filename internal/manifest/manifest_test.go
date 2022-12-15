@@ -61,6 +61,8 @@ func TestManifestHandling(t *testing.T) {
 		"server-root-ca.pem",
 		"shortlived-key.pem",
 		"shortlived.pem",
+		"shortlived2m-key.pem",
+		"shortlived2m.pem",
 		"state.yaml",
 	}
 
