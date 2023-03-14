@@ -4,9 +4,9 @@ go 1.19
 
 require (
 	github.com/cnf/structhash v0.0.0-20201127153200-e1b16c1ebc08
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/tsaarni/x500dn v1.0.0
-	golang.org/x/mod v0.7.0
+	golang.org/x/mod v0.9.0
 	sigs.k8s.io/yaml v1.3.0
 )
 
