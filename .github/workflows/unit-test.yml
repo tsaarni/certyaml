@@ -20,15 +20,6 @@ jobs:
         go-version: 'stable'
       id: go
 
-    - uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-
     - name: Checkout code
       uses: actions/checkout@v3
 
@@ -37,9 +28,9 @@ jobs:
         go get -v -t -d ./...
 
     - name: golangci-lint
-      uses: golangci/golangci-lint-action@v2
+      uses: golangci/golangci-lint-action@v3
       with:
-          version: v1.50.1
+          version: v1.51.2
 
     - name: Build
       run: make build
