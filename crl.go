@@ -17,9 +17,11 @@ package certyaml
 import (
 	"bytes"
 	"crypto/rand"
+	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"math/big"
 	"os"
 	"time"
 )
@@ -64,7 +66,7 @@ func (crl *CRL) Add(cert *Certificate) error {
 func (crl *CRL) DER() (crlBytes []byte, err error) {
 	if crl.Issuer == nil {
 		if len(crl.Revoked) == 0 {
-			return nil, fmt.Errorf("Issuer not known: either set Issuer or add certificates to the CRL")
+			return nil, fmt.Errorf("issuer not known: either set Issuer or add certificates to the CRL")
 		}
 		crl.Issuer = crl.Revoked[0].Issuer
 	}
@@ -107,7 +109,14 @@ func (crl *CRL) DER() (crlBytes []byte, err error) {
 		return nil, err
 	}
 
-	return ca.CreateCRL(rand.Reader, privateKey, revokedCerts, effectiveRevocationTime, effectiveExpiry)
+	template := &x509.RevocationList{
+		Number:              big.NewInt(0),
+		ThisUpdate:          effectiveRevocationTime,
+		NextUpdate:          effectiveExpiry,
+		RevokedCertificates: revokedCerts,
+	}
+
+	return x509.CreateRevocationList(rand.Reader, template, &ca, privateKey)
 }
 
 // PEM returns the CRL as PEM buffer.
