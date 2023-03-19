@@ -27,47 +27,16 @@ jobs:
         run: |
           GOOS=linux   GOARCH=amd64 go build -v ./cmd/certyaml && tar zcvf certyaml-linux-amd64.tar.gz  certyaml && rm certyaml
           GOOS=darwin  GOARCH=amd64 go build -v ./cmd/certyaml && tar zcvf certyaml-darwin-amd64.tar.gz certyaml && rm certyaml
+          GOOS=darwin  GOARCH=arm64 go build -v ./cmd/certyaml && tar zcvf certyaml-darwin-arm64.tar.gz certyaml && rm certyaml
           GOOS=windows GOARCH=amd64 go build -v ./cmd/certyaml && zip      certyaml-windows-amd64.zip   certyaml.exe && rm certyaml.exe
 
-      # https://github.com/actions/create-release
+      # https://github.com/softprops/action-gh-release
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-      # https://github.com/actions/upload-release-asset
-      - name: Upload linux binary
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: certyaml-linux-amd64.tar.gz
-          asset_name: certyaml-linux-amd64.tar.gz
-          asset_content_type: application/octet-stream
-
-      - name: Upload macos binary
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: certyaml-darwin-amd64.tar.gz
-          asset_name: certyaml-darwin-amd64.tar.gz
-          asset_content_type: application/octet-stream
-
-      - name: Upload windows binary
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: certyaml-windows-amd64.zip
-          asset_name: certyaml-windows-amd64.zip
-          asset_content_type: application/octet-stream
+          draft: true
+          files: |
+            certyaml-linux-amd64.tar.gz
+            certyaml-darwin-amd64.tar.gz
+            certyaml-darwin-arm64.tar.gz
+            certyaml-windows-amd64.zip
