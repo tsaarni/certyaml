@@ -30,6 +30,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/tsaarni/x500dn"
@@ -94,6 +95,10 @@ type Certificate struct {
 	// GeneratedCert is a pointer to the generated certificate and private key.
 	// It is automatically set after calling any of the Certificate functions.
 	GeneratedCert *tls.Certificate `json:"-" hash:"-"`
+
+	// lazyInitialize ensures that only single goroutine can run lazy initialization of certificate concurrently.
+	// Concurrent regeneration of certificate and private key by explicit call to Generate() is not supported.
+	lazyInitialize sync.Mutex
 }
 
 type KeyType uint
@@ -245,6 +250,9 @@ func (c *Certificate) defaults() error {
 }
 
 func (c *Certificate) ensureGenerated() error {
+	c.lazyInitialize.Lock()
+	defer c.lazyInitialize.Unlock()
+
 	if c.GeneratedCert == nil {
 		err := c.Generate()
 		if err != nil {

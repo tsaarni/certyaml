@@ -17,6 +17,7 @@ package certyaml
 import (
 	"crypto/x509"
 	"math/big"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -97,4 +98,23 @@ func TestEmptyCRL(t *testing.T) {
 	crl = CRL{}
 	_, err = crl.DER()
 	assert.NotNil(t, err)
+}
+
+func TestParallelCRLLazyInitialization(t *testing.T) {
+	ca := Certificate{Subject: "CN=ca"}
+	revoked := Certificate{Subject: "CN=Joe", Issuer: &ca}
+	crl := CRL{Revoked: []*Certificate{&revoked}}
+
+	// Call CRL generation in parallel.
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func(cert *Certificate) {
+			defer wg.Done()
+			_, err := crl.DER()
+			assert.Nil(t, err)
+		}(&ca)
+	}
+
+	wg.Wait()
 }
