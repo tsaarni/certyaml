@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"sync"
 	"testing"
 	"time"
 
@@ -400,4 +401,21 @@ func TestCertificateChainInPEM(t *testing.T) {
 	assert.Equal(t, "CN=sub-ca-1", cert.Subject.String())
 
 	assert.Empty(t, rest)
+}
+
+func TestParallelCertificateLazyInitialization(t *testing.T) {
+	cert := Certificate{Subject: "CN=Joe"}
+
+	// Trigger lazy initialization by calling one of the generator methods in parallel.
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func(cert *Certificate) {
+			defer wg.Done()
+			_, err := cert.X509Certificate()
+			assert.Nil(t, err)
+		}(&cert)
+	}
+
+	wg.Wait()
 }

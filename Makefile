@@ -1,7 +1,7 @@
 all: check build
 
 test:
-	go test -v ./...
+	go test --race -v ./...
 
 check: test
 	golangci-lint run

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -44,6 +45,9 @@ type CRL struct {
 	// Issuer is the CA certificate issuing this CRL.
 	// If not set, it defaults to the issuer of certificates added to Revoked list.
 	Issuer *Certificate
+
+	// mutex ensures that only single goroutine can generate CRL concurrently.
+	mutex sync.Mutex
 }
 
 // Add appends a Certificate to CRL list.
@@ -64,6 +68,9 @@ func (crl *CRL) Add(cert *Certificate) error {
 // DER returns the CRL as DER buffer.
 // Error is not nil if generation fails.
 func (crl *CRL) DER() (crlBytes []byte, err error) {
+	crl.mutex.Lock()
+	defer crl.mutex.Unlock()
+
 	if crl.Issuer == nil {
 		if len(crl.Revoked) == 0 {
 			return nil, fmt.Errorf("issuer not known: either set Issuer or add certificates to the CRL")
