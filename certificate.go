@@ -98,7 +98,7 @@ type Certificate struct {
 
 	// lazyInitialize ensures that only single goroutine can run lazy initialization of certificate concurrently.
 	// Concurrent regeneration of certificate and private key by explicit call to Generate() is not supported.
-	lazyInitialize sync.Mutex
+	lazyInitialize sync.Mutex `json:"-" hash:"-"`
 }
 
 type KeyType uint
