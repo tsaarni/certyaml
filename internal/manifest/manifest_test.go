@@ -86,7 +86,7 @@ func TestStateHandling(t *testing.T) {
 	err = GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.Nil(t, err)
 
-	// Check that calling generate again does not alter the state.
+	// Check stable hashing: calling generate again on same manifest does not alter the state.
 	h1, err := dirhash.HashDir(dir, "", dirhash.Hash1)
 	assert.Nil(t, err)
 	err = GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
@@ -260,8 +260,8 @@ func TestRevocation(t *testing.T) {
 	certList, err := x509.ParseRevocationList(block.Bytes)
 	assert.Nil(t, err)
 	assert.Equal(t, "CN=ca1", certList.Issuer.String())
-	assert.Equal(t, 1, len(certList.RevokedCertificates))
-	assert.Equal(t, big.NewInt(123), certList.RevokedCertificates[0].SerialNumber)
+	assert.Equal(t, 1, len(certList.RevokedCertificateEntries))
+	assert.Equal(t, big.NewInt(123), certList.RevokedCertificateEntries[0].SerialNumber)
 
 	crlFile = path.Join(dir, "ca2-crl.pem")
 	pemBuffer, err = os.ReadFile(crlFile)
@@ -273,9 +273,9 @@ func TestRevocation(t *testing.T) {
 	certList, err = x509.ParseRevocationList(block.Bytes)
 	assert.Nil(t, err)
 	assert.Equal(t, "CN=ca2", certList.Issuer.String())
-	assert.Equal(t, 2, len(certList.RevokedCertificates))
-	assert.Equal(t, big.NewInt(123), certList.RevokedCertificates[0].SerialNumber)
-	assert.Equal(t, big.NewInt(456), certList.RevokedCertificates[1].SerialNumber)
+	assert.Equal(t, 2, len(certList.RevokedCertificateEntries))
+	assert.Equal(t, big.NewInt(123), certList.RevokedCertificateEntries[0].SerialNumber)
+	assert.Equal(t, big.NewInt(456), certList.RevokedCertificateEntries[1].SerialNumber)
 }
 
 func TestInvalidRevocation(t *testing.T) {

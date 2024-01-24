@@ -38,10 +38,10 @@ func TestRevocation(t *testing.T) {
 	assert.Nil(t, err)
 	certList, err := x509.ParseRevocationList(crlBytes)
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(certList.RevokedCertificates))
+	assert.Equal(t, 2, len(certList.RevokedCertificateEntries))
 	assert.Equal(t, "CN=ca", certList.Issuer.String())
-	assert.Equal(t, big.NewInt(123), certList.RevokedCertificates[0].SerialNumber)
-	assert.Equal(t, big.NewInt(456), certList.RevokedCertificates[1].SerialNumber)
+	assert.Equal(t, big.NewInt(123), certList.RevokedCertificateEntries[0].SerialNumber)
+	assert.Equal(t, big.NewInt(456), certList.RevokedCertificateEntries[1].SerialNumber)
 }
 
 func TestInvalidSelfSigned(t *testing.T) {
@@ -91,7 +91,7 @@ func TestEmptyCRL(t *testing.T) {
 
 	certList, err := x509.ParseRevocationList(crlBytes)
 	assert.Nil(t, err)
-	assert.Equal(t, 0, len(certList.RevokedCertificates))
+	assert.Equal(t, 0, len(certList.RevokedCertificateEntries))
 	assert.Equal(t, "CN=ca", certList.Issuer.String())
 
 	// Empty CRL with no issuer cannot be created.
