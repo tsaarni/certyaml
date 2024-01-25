@@ -2,38 +2,40 @@ name: unit-tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
-
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        # https://github.com/actions/go-versions/blob/main/versions-manifest.json
-        go-version: 'stable'
-      id: go
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          # https://github.com/actions/go-versions/blob/main/versions-manifest.json
+          go-version: "stable"
+        id: go
 
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Get dependencies
+        run: |
+          go get -v -t -d ./...
 
-    - name: Get dependencies
-      run: |
-        go get -v -t -d ./...
-
-    - name: golangci-lint
-      uses: golangci/golangci-lint-action@v3
-      with:
+      # https://github.com/golangci/golangci-lint-action
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
           version: v1.55.2
+          # Workaround for "file exists" errors while running tar.
+          # golangci-lint-action conflicts with caching in setup-go
+          skip-pkg-cache: true
 
-    - name: Build
-      run: make build
+      - name: Build
+        run: make build
 
-    - name: Unit tests
-      run: make test
+      - name: Unit tests
+        run: make test

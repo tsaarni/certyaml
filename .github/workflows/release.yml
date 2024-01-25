@@ -3,22 +3,21 @@ name: Create release and upload artifacts
 on:
   push:
     tags:
-      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
-
   build:
     name: Build release artifacts, create release and upload artifacts
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           # https://github.com/actions/go-versions/blob/main/versions-manifest.json
-          go-version: 'stable'
+          go-version: "stable"
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Get dependencies
         run: go get -v -t -d ./...
