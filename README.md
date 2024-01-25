@@ -14,7 +14,10 @@ It is similar to `openssl` or `cfssl` which can also be used for issuing certifi
 Certyaml is targeted for developers who need to set up a private PKI for test environments.
 It cannot be used for production environments where publicly trusted certificates are needed.
 
-If you program in Java, there is similar project with Java API called [certy](https://github.com/tsaarni/java-certy).
+If you program in other languages, check out following projects:
+
+- [java-certy](https://github.com/tsaarni/java-certy)
+- [python-certy](https://github.com/tsaarni/python-certy)
 
 ## Using certyaml
 
