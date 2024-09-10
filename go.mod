@@ -1,12 +1,14 @@
 module github.com/tsaarni/certyaml
 
-go 1.19
+go 1.22.0
+
+toolchain go1.22.4
 
 require (
 	github.com/cnf/structhash v0.0.0-20201127153200-e1b16c1ebc08
 	github.com/stretchr/testify v1.9.0
 	github.com/tsaarni/x500dn v1.0.0
-	golang.org/x/mod v0.20.0
+	golang.org/x/mod v0.21.0
 	sigs.k8s.io/yaml v1.4.0
 )
 

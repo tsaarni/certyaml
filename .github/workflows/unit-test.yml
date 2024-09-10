@@ -29,7 +29,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.55.2
+          version: v1.61.0
           # Workaround for "file exists" errors while running tar.
           # golangci-lint-action conflicts with caching in setup-go
           skip-pkg-cache: true
