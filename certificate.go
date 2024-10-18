@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
@@ -54,7 +55,7 @@ type Certificate struct {
 
 	// KeySize defines the key length in bits.
 	// Default value is 256 (EC) or 2048 (RSA) if KeySize is undefined (when value is 0).
-	// Examples: For key_type EC: 256, 384, 521. For key_type RSA: 1024, 2048, 4096.
+	// Examples: For key_type EC: 256, 384, 521. For key_type RSA: 1024, 2048, 4096. For key_type ED25519: 256.
 	KeySize int `json:"key_size"`
 
 	// Expires automatically defines certificate's NotAfter field by adding duration defined in Expires to the current time.
@@ -106,6 +107,7 @@ type KeyType uint
 const (
 	KeyTypeEC = iota
 	KeyTypeRSA
+	KeyTypeEd25519
 )
 
 // TLSCertificate returns the Certificate as tls.Certificate.
@@ -221,6 +223,8 @@ func (c *Certificate) defaults() error {
 			c.KeySize = 256
 		} else if c.KeyType == KeyTypeRSA {
 			c.KeySize = 2048
+		} else if c.KeyType == KeyTypeEd25519 {
+			c.KeySize = 256
 		}
 	}
 
@@ -300,6 +304,11 @@ func (c *Certificate) Generate() error {
 		key, err = ecdsa.GenerateKey(curve, rand.Reader)
 	} else if c.KeyType == KeyTypeRSA {
 		key, err = rsa.GenerateKey(rand.Reader, c.KeySize)
+	} else if c.KeyType == KeyTypeEd25519 {
+		if c.KeySize != 256 {
+			return fmt.Errorf("invalid Ed25519 key size: %d (valid: 256)", c.KeySize)
+		}
+		_, key, err = ed25519.GenerateKey(rand.Reader)
 	}
 	if err != nil {
 		return err

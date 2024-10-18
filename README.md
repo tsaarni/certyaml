@@ -154,8 +154,8 @@ Writing state: certs.state
 | --- | ----------- | -------- |
 | subject | Distinguished name for the certificate. `subject` is the only mandatory field and it must be unique. | `CN=Joe` |
 | sans | List of values for x509 Subject Alternative Name extension. | `DNS:www.example.com`, `IP:1.2.3.4`, `URI:https://www.example.com` |
-| key_type | Certificate key algorithm. Default value is `EC` (elliptic curve). | `EC` or `RSA` |
-| key_size | The key length in bits. Default value is 256 if `key_size` is not defined. | For key_type EC: `256`, `384`, `521`. For key_type RSA: `1024`, `2048`, `4096` |
+| key_type | Certificate key algorithm. Default value is `EC` (elliptic curve). | `EC`, `RSA` or `ED25519` |
+| key_size | The key length in bits. Default value is 256 if `key_size` is not defined. | For key_type EC: `256`, `384`, `521`. For key_type RSA: `1024`, `2048`, `4096`. For key_type ED25519: `256`. |
 | expires | Certificate NotAfter field is calculated by adding duration defined in `expires` to current time. Default value is 8760h (one year) if `expires` is not defined. `not_after` takes precedence over `expires`. | `1s`, `10m`, `1h` |
 | key_usages | List of values for x509 key usage extension. If `key_usages` is not defined, `CertSign` and `CRLSign` are set for CA certificates, `KeyEncipherment` and `DigitalSignature` are set for end-entity certificates. | `DigitalSignature`, `ContentCommitment`, `KeyEncipherment`, `DataEncipherment`, `KeyAgreement`, `CertSign`, `CRLSign`, `EncipherOnly`, `DecipherOnly` |
 | ext_key_usages | List of values for x509 extended key usage extension. Not set by default. | `Any`, `ServerAuth`, `ClientAuth`, `CodeSigning`, `EmailProtection`, `IPSECEndSystem`, `IPSECTunnel`, `IPSECUser`. `TimeStamping`, `OCSPSigning`, `MicrosoftServerGatedCrypto`, `NetscapeServerGatedCrypto`, `MicrosoftCommercialCodeSigning`, `MicrosoftKernelCodeSigning` |

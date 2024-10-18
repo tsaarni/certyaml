@@ -239,6 +239,16 @@ func TestParsingAllCertificateFields(t *testing.T) {
 	assert.Empty(t, got.IPAddresses)
 
 	assert.Equal(t, big.NewInt(123), got.SerialNumber)
+
+	// Check fields Ee25519  end-entity cert.
+	tlsCert, err = tls.LoadX509KeyPair(path.Join(dir, "ed25519-cert.pem"), path.Join(dir, "ed25519-cert-key.pem"))
+	assert.Nil(t, err)
+	got, err = x509.ParseCertificate(tlsCert.Certificate[0])
+	assert.Nil(t, err)
+
+	assert.Equal(t, "ed25519-cert", got.Issuer.CommonName)
+	assert.Equal(t, "ed25519-cert", got.Subject.CommonName)
+	assert.Equal(t, x509.Ed25519, got.PublicKeyAlgorithm)
 }
 
 func TestRevocation(t *testing.T) {
