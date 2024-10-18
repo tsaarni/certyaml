@@ -208,6 +208,10 @@ func TestInvalidKeySize(t *testing.T) {
 	input = Certificate{Subject: "CN=Joe", KeyType: KeyTypeRSA, KeySize: 1}
 	_, err = input.X509Certificate()
 	assert.NotNil(t, err)
+
+	input = Certificate{Subject: "CN=Joe", KeyType: KeyTypeEd25519, KeySize: 1}
+	_, err = input.X509Certificate()
+	assert.NotNil(t, err)
 }
 
 func TestPEM(t *testing.T) {

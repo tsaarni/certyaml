@@ -42,3 +42,6 @@ key_size: 256
 not_before: 2020-01-01T09:00:00Z
 expires: 1h
 serial: 123
+---
+subject: cn=ed25519-cert
+key_type: ED25519

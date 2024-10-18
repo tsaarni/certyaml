@@ -219,6 +219,8 @@ func (m *Manifest) processCertificate(c *CertificateManifest) error {
 			c.KeyType = api.KeyTypeEC
 		case "RSA":
 			c.KeyType = api.KeyTypeRSA
+		case "ED25519":
+			c.KeyType = api.KeyTypeEd25519
 		default:
 			return fmt.Errorf("key_type contains invalid value: %s", c.KeyTypeAsString)
 		}
