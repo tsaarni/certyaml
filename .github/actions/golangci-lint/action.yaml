@@ -1,0 +1,18 @@
+# This action runs golangci-lint using Makefile.
+# It ensures the same version of golangci-lint is used in CI as in local development.
+name: golangci-lint
+description: 'Run golangci-lint'
+inputs:
+  working-directory:
+    description: 'Working directory'
+    required: false
+    default: '.'
+runs:
+  using: 'composite'
+  steps:
+    - name: Run golangci-lint
+      run: |
+        echo "::add-matcher::${{ inputs.working-directory }}/.github/actions/golangci-lint/matcher.json"
+        make lint
+        echo "::remove-matcher owner=golangci-lint::"
+      shell: bash

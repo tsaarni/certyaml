@@ -323,17 +323,17 @@ func TestWritingPEMFiles(t *testing.T) {
 func TestRegenerate(t *testing.T) {
 	cert := Certificate{Subject: "CN=Joe"}
 
-	old, err := cert.TLSCertificate()
+	older, err := cert.TLSCertificate()
 	assert.Nil(t, err)
 
 	err = cert.Generate()
 	assert.Nil(t, err)
 
-	new, err := cert.TLSCertificate()
+	newer, err := cert.TLSCertificate()
 	assert.Nil(t, err)
 
-	assert.NotEqual(t, old.Certificate, new.Certificate)
-	assert.NotEqual(t, old.PrivateKey, new.PrivateKey)
+	assert.NotEqual(t, older.Certificate, newer.Certificate)
+	assert.NotEqual(t, older.PrivateKey, newer.PrivateKey)
 }
 
 func TestSerial(t *testing.T) {
