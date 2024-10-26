@@ -93,6 +93,10 @@ type Certificate struct {
 	// If not set, the default value is current time in nanoseconds.
 	SerialNumber *big.Int `json:"-" hash:"-"`
 
+	// CRLDistributionPoint defines the URI for downloading the CRL for this certificate.
+	// Not set by default.
+	CRLDistributionPoints []string `json:"crl_distribution_points"`
+
 	// GeneratedCert is a pointer to the generated certificate and private key.
 	// It is automatically set after calling any of the Certificate functions.
 	GeneratedCert *tls.Certificate `json:"-" hash:"-"`
@@ -200,11 +204,11 @@ func (c *Certificate) WritePEM(certFile, keyFile string) error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(certFile, cert, 0600)
+	err = os.WriteFile(certFile, cert, 0o600)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(keyFile, key, 0600)
+	err = os.WriteFile(keyFile, key, 0o600)
 	if err != nil {
 		return err
 	}
@@ -341,6 +345,7 @@ func (c *Certificate) Generate() error {
 		ExtKeyUsage:           c.ExtKeyUsage,
 		BasicConstraintsValid: *c.IsCA,
 		IsCA:                  *c.IsCA,
+		CRLDistributionPoints: c.CRLDistributionPoints,
 	}
 
 	for _, san := range c.SubjectAltNames {

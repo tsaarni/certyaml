@@ -44,7 +44,6 @@ func TestSubjectAltName(t *testing.T) {
 	input := Certificate{Subject: "CN=Joe", SubjectAltNames: []string{"DNS:host.example.com", "URI:http://www.example.com", "IP:1.2.3.4"}}
 	got, err := input.X509Certificate()
 	assert.Nil(t, err)
-	assert.Nil(t, err)
 	assert.Equal(t, "Joe", got.Subject.CommonName)
 	assert.Equal(t, "host.example.com", got.DNSNames[0])
 	assert.Equal(t, url.URL{Scheme: "http", Host: "www.example.com"}, *got.URIs[0])
@@ -422,4 +421,11 @@ func TestParallelCertificateLazyInitialization(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func TestCRLDistributionPoint(t *testing.T) {
+	input := Certificate{Subject: "CN=Joe", CRLDistributionPoints: []string{"http://example.com/crl.pem"}}
+	got, err := input.X509Certificate()
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"http://example.com/crl.pem"}, got.CRLDistributionPoints)
 }
