@@ -190,6 +190,28 @@ func (c *Certificate) PEM() (cert []byte, key []byte, err error) {
 	return
 }
 
+// CertPEM returns the certificate as a PEM buffer.
+// This method is useful in single-value context, for example when populating struct field.
+// Unlike the PEM() method, which handles errors, this method will panic if an error occurs.
+func (c *Certificate) CertPEM() []byte {
+	cert, _, err := c.PEM()
+	if err != nil {
+		panic(err)
+	}
+	return cert
+}
+
+// KeyPEM returns the private key as a PEM buffer.
+// This method is useful in single-value context, for example when populating struct field.
+// Unlike the PEM() method, which handles errors, this method will panic if an error occurs.
+func (c *Certificate) KeyPEM() []byte {
+	_, key, err := c.PEM()
+	if err != nil {
+		panic(err)
+	}
+	return key
+}
+
 // WritePEM writes the Certificate as certificate and private key PEM files.
 // Complete certificate chain (up to but not including root) is included for end-entity certificates.
 // A key pair and certificate will be generated at first call of any Certificate functions.

@@ -429,3 +429,11 @@ func TestCRLDistributionPoint(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"http://example.com/crl.pem"}, got.CRLDistributionPoints)
 }
+
+func TestConvenienceGetters(t *testing.T) {
+	input := Certificate{Subject: "CN=Joe"}
+	cert, key, err := input.PEM()
+	assert.Nil(t, err)
+	assert.Equal(t, cert, input.CertPEM())
+	assert.Equal(t, key, input.KeyPEM())
+}
