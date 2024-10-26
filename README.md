@@ -6,6 +6,14 @@ No more storing test certificates and private keys in the repository!
 ![](https://github.com/tsaarni/certyaml/workflows/unit-tests/badge.svg)
 [![Go Reference](https://pkg.go.dev/badge/github.com/tsaarni/certyaml.svg)](https://pkg.go.dev/github.com/tsaarni/certyaml)
 
+## Table of Contents
+
+- [Description](#description)
+- [Using certyaml](#using-certyaml)
+- [Installing](#installing)
+- [YAML Syntax](#yaml-syntax)
+- [Go API](#go-api)
+
 ## Description
 
 Certyaml is a command line tool and a Go API for issuing certificates.
@@ -49,6 +57,13 @@ go install github.com/tsaarni/certyaml/cmd/certyaml@latest
 ```
 
 The executable will be stored in the go path, by default `~/go/bin/certyaml`.
+
+Alternatively, you can run the tool without installing it:
+
+```bash
+go run github.com/tsaarni/certyaml/cmd/certyaml@latest
+```
+
 
 ### Using certyaml
 
