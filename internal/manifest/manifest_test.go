@@ -19,20 +19,22 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"io/fs"
 	"math/big"
 	"net"
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/mod/sumdb/dirhash"
 )
 
 func TestManifestHandling(t *testing.T) {
@@ -87,12 +89,12 @@ func TestStateHandling(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Check stable hashing: calling generate again on same manifest does not alter the state.
-	h1, err := dirhash.HashDir(dir, "", dirhash.Hash1)
+	h1, err := dirHash(dir)
 	assert.Nil(t, err)
 	err = GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.Nil(t, err)
 
-	h2, err := dirhash.HashDir(dir, "", dirhash.Hash1)
+	h2, err := dirHash(dir)
 	assert.Nil(t, err)
 	assert.Equal(t, h1, h2)
 
@@ -102,7 +104,7 @@ func TestStateHandling(t *testing.T) {
 	err = GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.Nil(t, err)
 
-	h3, err := dirhash.HashDir(dir, "", dirhash.Hash1)
+	h3, err := dirHash(dir)
 	assert.Nil(t, err)
 	assert.NotEqual(t, h2, h3)
 
@@ -110,7 +112,7 @@ func TestStateHandling(t *testing.T) {
 	err = GenerateCertificates(&output, "testdata/certs-state-2.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.Nil(t, err)
 
-	h4, err := dirhash.HashDir(dir, "", dirhash.Hash1)
+	h4, err := dirHash(dir)
 	assert.Nil(t, err)
 	assert.NotEqual(t, h3, h4)
 }
@@ -297,4 +299,30 @@ func TestInvalidRevocation(t *testing.T) {
 	var output bytes.Buffer
 	err = GenerateCertificates(&output, "testdata/cert-invalid-revoke-self-signed.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.NotNil(t, err)
+}
+
+// Helpers
+
+// dirHash returns a hash of all files in a directory.
+func dirHash(dir string) (string, error) {
+	hash := sha256.New()
+
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() {
+			buf, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			hash.Write(buf)
+		}
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return string(hash.Sum(nil)), nil
 }
