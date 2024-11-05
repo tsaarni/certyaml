@@ -24,10 +24,10 @@ jobs:
 
       - name: Build
         run: |
-          GOOS=linux   GOARCH=amd64 go build -v ./cmd/certyaml && tar zcvf certyaml-linux-amd64.tar.gz  certyaml && rm certyaml
-          GOOS=darwin  GOARCH=amd64 go build -v ./cmd/certyaml && tar zcvf certyaml-darwin-amd64.tar.gz certyaml && rm certyaml
-          GOOS=darwin  GOARCH=arm64 go build -v ./cmd/certyaml && tar zcvf certyaml-darwin-arm64.tar.gz certyaml && rm certyaml
-          GOOS=windows GOARCH=amd64 go build -v ./cmd/certyaml && zip      certyaml-windows-amd64.zip   certyaml.exe && rm certyaml.exe
+          GOOS=linux   GOARCH=amd64 CGO_ENABLED=0 go build -v ./cmd/certyaml && tar zcvf certyaml-linux-amd64.tar.gz  certyaml && rm certyaml
+          GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0 go build -v ./cmd/certyaml && tar zcvf certyaml-darwin-amd64.tar.gz certyaml && rm certyaml
+          GOOS=darwin  GOARCH=arm64 CGO_ENABLED=0 go build -v ./cmd/certyaml && tar zcvf certyaml-darwin-arm64.tar.gz certyaml && rm certyaml
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -v ./cmd/certyaml && zip      certyaml-windows-amd64.zip   certyaml.exe && rm certyaml.exe
 
       # https://github.com/softprops/action-gh-release
       - name: Create Release
