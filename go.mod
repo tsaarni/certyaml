@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/cnf/structhash v0.0.0-20201127153200-e1b16c1ebc08
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/tsaarni/x500dn v1.0.0
 	sigs.k8s.io/yaml v1.4.0
 )
