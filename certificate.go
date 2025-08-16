@@ -245,11 +245,12 @@ func (c *Certificate) defaults() error {
 	}
 
 	if c.KeySize == 0 {
-		if c.KeyType == KeyTypeEC {
+		switch c.KeyType {
+		case KeyTypeEC:
 			c.KeySize = 256
-		} else if c.KeyType == KeyTypeRSA {
+		case KeyTypeRSA:
 			c.KeySize = 2048
-		} else if c.KeyType == KeyTypeEd25519 {
+		case KeyTypeEd25519:
 			c.KeySize = 256
 		}
 	}
@@ -315,7 +316,8 @@ func (c *Certificate) Generate() error {
 
 	// Generate key-pair for the certificate.
 	var key crypto.Signer
-	if c.KeyType == KeyTypeEC {
+	switch c.KeyType {
+	case KeyTypeEC:
 		var curve elliptic.Curve
 		switch c.KeySize {
 		case 256:
@@ -328,9 +330,9 @@ func (c *Certificate) Generate() error {
 			return fmt.Errorf("invalid EC key size: %d (valid: 256, 384, 521)", c.KeySize)
 		}
 		key, err = ecdsa.GenerateKey(curve, rand.Reader)
-	} else if c.KeyType == KeyTypeRSA {
+	case KeyTypeRSA:
 		key, err = rsa.GenerateKey(rand.Reader, c.KeySize)
-	} else if c.KeyType == KeyTypeEd25519 {
+	case KeyTypeEd25519:
 		if c.KeySize != 256 {
 			return fmt.Errorf("invalid Ed25519 key size: %d (valid: 256)", c.KeySize)
 		}
