@@ -216,6 +216,7 @@ func TestParsingAllCertificateFields(t *testing.T) {
 	assert.True(t, got.IPAddresses[0].Equal(expectedIP))
 
 	assert.Equal(t, []string{"http://ca1.example.com/crl", "http://ca2.example.com/crl"}, got.CRLDistributionPoints)
+	assert.Equal(t, []string{"http://ocsp.example.com"}, got.OCSPServer)
 
 	// Check fields from second end-entity cert.
 	tlsCert, err = tls.LoadX509KeyPair(path.Join(dir, "ec-cert.pem"), path.Join(dir, "ec-cert-key.pem"))

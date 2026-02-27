@@ -39,6 +39,8 @@ not_after: 2030-01-01T09:00:00Z
 crl_distribution_points:
 - http://ca1.example.com/crl
 - http://ca2.example.com/crl
+ocsp:
+- http://ocsp.example.com
 ---
 subject: cn=ec-cert
 key_size: 256
