@@ -41,13 +41,14 @@ func TestSubjectName(t *testing.T) {
 }
 
 func TestSubjectAltName(t *testing.T) {
-	input := Certificate{Subject: "CN=Joe", SubjectAltNames: []string{"DNS:host.example.com", "URI:http://www.example.com", "IP:1.2.3.4"}}
+	input := Certificate{Subject: "CN=Joe", SubjectAltNames: []string{"DNS:host.example.com", "URI:http://www.example.com", "IP:1.2.3.4", "email:user@example.com"}}
 	got, err := input.X509Certificate()
 	assert.Nil(t, err)
 	assert.Equal(t, "Joe", got.Subject.CommonName)
 	assert.Equal(t, "host.example.com", got.DNSNames[0])
 	assert.Equal(t, url.URL{Scheme: "http", Host: "www.example.com"}, *got.URIs[0])
 	assert.Equal(t, net.IP{1, 2, 3, 4}, got.IPAddresses[0])
+	assert.Equal(t, "user@example.com", got.EmailAddresses[0])
 }
 
 func TestEcKeySize(t *testing.T) {

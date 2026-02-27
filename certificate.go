@@ -46,7 +46,7 @@ type Certificate struct {
 	Subject string `json:"subject"`
 
 	// SubjectAltNames defines an optional list of values for x509 Subject Alternative Name extension.
-	// Examples: DNS:www.example.com, IP:1.2.3.4, URI:https://www.example.com.
+	// Examples: DNS:www.example.com, IP:1.2.3.4, URI:https://www.example.com, email:user@example.com.
 	SubjectAltNames []string `json:"sans"`
 
 	// KeyType defines the certificate key algorithm.
@@ -388,8 +388,10 @@ func (c *Certificate) Generate() error {
 				return fmt.Errorf("invalid IP address: %s", strings.TrimPrefix(san, "IP:"))
 			}
 			template.IPAddresses = append(template.IPAddresses, ip)
+		case strings.HasPrefix(san, "email:"):
+			template.EmailAddresses = append(template.EmailAddresses, strings.TrimPrefix(san, "email:"))
 		default:
-			return fmt.Errorf("unknown san, forgot prefix? (must be one of DNS:|URI:|IP:): %s", san)
+			return fmt.Errorf("unknown san, forgot prefix? (must be one of DNS:|URI:|IP:|email:): %s", san)
 		}
 	}
 
