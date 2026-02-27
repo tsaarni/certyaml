@@ -433,6 +433,13 @@ func TestCRLDistributionPoint(t *testing.T) {
 	assert.Equal(t, []string{"http://example.com/crl.pem"}, got.CRLDistributionPoints)
 }
 
+func TestOCSPServer(t *testing.T) {
+	input := Certificate{Subject: "CN=Joe", OCSP: []string{"http://ocsp.example.com"}}
+	got, err := input.X509Certificate()
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"http://ocsp.example.com"}, got.OCSPServer)
+}
+
 func TestExtraExtensions(t *testing.T) {
 	oid := asn1.ObjectIdentifier{1, 2, 3, 4}
 	value := []byte{0x05, 0x00}

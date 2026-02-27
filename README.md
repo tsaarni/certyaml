@@ -182,6 +182,7 @@ Writing state: certs.state
 | serial | Serial number for the certificate. Default value is current time in nanoseconds. | `123` |
 | revoked | When `true` the serial number of the certificate will be written in `[issuer]-crl.pem`.  Default value is `false`. The file will be written only if at least one certificate is revoked. CRL `ThisUpdate` is set to current time and `NextUpdate` one week after. Self-signed certificates cannot be revoked. | `true`, `false` |
 | crl_distribution_points | List of URLs for X509 CRL Distribution Points extension. | `http://example.com/crl.pem` |
+| ocsp | List of URLs for X509 OCSP responder (Authority Information Access extension). | `http://ocsp.example.com` |
 
 ## Go API
 

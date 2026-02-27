@@ -98,6 +98,10 @@ type Certificate struct {
 	// Not set by default.
 	CRLDistributionPoints []string `json:"crl_distribution_points"`
 
+	// OCSP defines the URL of the OCSP responder for this certificate.
+	// Not set by default.
+	OCSP []string `json:"ocsp"`
+
 	// ExtraExtensions defines additional x509 extensions to include in the certificate.
 	// Not set by default.
 	ExtraExtensions []pkix.Extension `json:"-" hash:"-"`
@@ -375,6 +379,7 @@ func (c *Certificate) Generate() error {
 		BasicConstraintsValid: *c.IsCA,
 		IsCA:                  *c.IsCA,
 		CRLDistributionPoints: c.CRLDistributionPoints,
+		OCSPServer:            c.OCSP,
 		ExtraExtensions:       c.ExtraExtensions,
 	}
 
