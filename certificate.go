@@ -24,6 +24,7 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
 	"math/big"
@@ -96,6 +97,10 @@ type Certificate struct {
 	// CRLDistributionPoint defines the URI for downloading the CRL for this certificate.
 	// Not set by default.
 	CRLDistributionPoints []string `json:"crl_distribution_points"`
+
+	// ExtraExtensions defines additional x509 extensions to include in the certificate.
+	// Not set by default.
+	ExtraExtensions []pkix.Extension `json:"-" hash:"-"`
 
 	// GeneratedCert is a pointer to the generated certificate and private key.
 	// It is automatically set after calling any of the Certificate functions.
@@ -370,6 +375,7 @@ func (c *Certificate) Generate() error {
 		BasicConstraintsValid: *c.IsCA,
 		IsCA:                  *c.IsCA,
 		CRLDistributionPoints: c.CRLDistributionPoints,
+		ExtraExtensions:       c.ExtraExtensions,
 	}
 
 	for _, san := range c.SubjectAltNames {
