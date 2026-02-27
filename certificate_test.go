@@ -20,6 +20,8 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/pem"
 	"math/big"
 	"net"
@@ -429,6 +431,15 @@ func TestCRLDistributionPoint(t *testing.T) {
 	got, err := input.X509Certificate()
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"http://example.com/crl.pem"}, got.CRLDistributionPoints)
+}
+
+func TestExtraExtensions(t *testing.T) {
+	oid := asn1.ObjectIdentifier{1, 2, 3, 4}
+	value := []byte{0x05, 0x00}
+	input := Certificate{Subject: "CN=Joe", ExtraExtensions: []pkix.Extension{{Id: oid, Value: value}}}
+	got, err := input.X509Certificate()
+	assert.Nil(t, err)
+	assert.Contains(t, got.Extensions, pkix.Extension{Id: oid, Value: value})
 }
 
 func TestConvenienceGetters(t *testing.T) {
