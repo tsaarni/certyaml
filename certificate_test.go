@@ -26,7 +26,6 @@ import (
 	"math/big"
 	"net"
 	"net/url"
-	"os"
 	"path"
 	"sync"
 	"testing"
@@ -285,12 +284,10 @@ func TestWritingPEMFiles(t *testing.T) {
 		Issuer:  &ca,
 	}
 
-	dir, err := os.MkdirTemp("/tmp", "certyaml-unittest")
-	assert.Nil(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	// Write CA certificate to disk.
-	err = ca.WritePEM(path.Join(dir, "ca.pem"), path.Join(dir, "ca-key.pem"))
+	err := ca.WritePEM(path.Join(dir, "ca.pem"), path.Join(dir, "ca-key.pem"))
 	assert.Nil(t, err, "failed writing: %s", err)
 
 	// Read it back and compare to original.
@@ -321,6 +318,22 @@ func TestWritingPEMFiles(t *testing.T) {
 	cert, err = client.TLSCertificate()
 	assert.Nil(t, err, "failed getting tls.Certificate: %s", err)
 	assert.Equal(t, cert, certFromPEM)
+}
+
+func TestWritingPEMFilesSkipEmpty(t *testing.T) {
+	dir := t.TempDir()
+
+	cert := Certificate{Subject: "CN=test"}
+	certFile := path.Join(dir, "cert.pem")
+	keyFile := path.Join(dir, "key.pem")
+
+	err := cert.WritePEM(certFile, "")
+	assert.Nil(t, err)
+	assert.FileExists(t, certFile)
+
+	err = cert.WritePEM("", keyFile)
+	assert.Nil(t, err)
+	assert.FileExists(t, keyFile)
 }
 
 func TestRegenerate(t *testing.T) {
