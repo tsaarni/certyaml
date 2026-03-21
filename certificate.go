@@ -224,6 +224,7 @@ func (c *Certificate) KeyPEM() []byte {
 // WritePEM writes the Certificate as certificate and private key PEM files.
 // Complete certificate chain (up to but not including root) is included for end-entity certificates.
 // A key pair and certificate will be generated at first call of any Certificate functions.
+// If certFile or keyFile is empty, the corresponding file is skipped.
 // Error is not nil if generation fails.
 func (c *Certificate) WritePEM(certFile, keyFile string) error {
 	err := c.ensureGenerated()
@@ -235,13 +236,17 @@ func (c *Certificate) WritePEM(certFile, keyFile string) error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(certFile, cert, 0o600)
-	if err != nil {
-		return err
+	if certFile != "" {
+		err = os.WriteFile(certFile, cert, 0o600)
+		if err != nil {
+			return err
+		}
 	}
-	err = os.WriteFile(keyFile, key, 0o600)
-	if err != nil {
-		return err
+	if keyFile != "" {
+		err = os.WriteFile(keyFile, key, 0o600)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

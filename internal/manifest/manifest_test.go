@@ -38,12 +38,10 @@ import (
 )
 
 func TestManifestHandling(t *testing.T) {
-	dir, err := os.MkdirTemp("", "certyaml-testsuite-*")
-	assert.Nil(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	var output bytes.Buffer
-	err = GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
+	err := GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.Nil(t, err)
 
 	wantFiles := []string{
@@ -80,12 +78,10 @@ func TestManifestHandling(t *testing.T) {
 }
 
 func TestStateHandling(t *testing.T) {
-	dir, err := os.MkdirTemp("", "certyaml-testsuite-*")
-	assert.Nil(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	var output bytes.Buffer
-	err = GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
+	err := GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.Nil(t, err)
 
 	// Check stable hashing: calling generate again on same manifest does not alter the state.
@@ -118,30 +114,24 @@ func TestStateHandling(t *testing.T) {
 }
 
 func TestInvalidIssuer(t *testing.T) {
-	dir, err := os.MkdirTemp("", "certyaml-testsuite-*")
-	assert.Nil(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 	var output bytes.Buffer
-	err = GenerateCertificates(&output, "testdata/certs-invalid-issuer.yaml", path.Join(dir, "state.yaml"), dir)
+	err := GenerateCertificates(&output, "testdata/certs-invalid-issuer.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.NotNil(t, err)
 }
 
 func TestInvalidManifest(t *testing.T) {
-	dir, err := os.MkdirTemp("", "certyaml-testsuite-*")
-	assert.Nil(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	var output bytes.Buffer
-	err = GenerateCertificates(&output, "testdata/certs-invalid-field.yaml", path.Join(dir, "state.yaml"), dir)
+	err := GenerateCertificates(&output, "testdata/certs-invalid-field.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.NotNil(t, err)
 }
 
 func TestInvalidDestinationDir(t *testing.T) {
-	dir, err := os.MkdirTemp("", "certyaml-testsuite-*")
-	assert.Nil(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 	var output bytes.Buffer
-	err = GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), "non-existing-dir")
+	err := GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), "non-existing-dir")
 	assert.NotNil(t, err)
 }
 
@@ -152,12 +142,10 @@ func TestMissingManifest(t *testing.T) {
 }
 
 func TestParsingAllCertificateFields(t *testing.T) {
-	dir, err := os.MkdirTemp("", "certyaml-testsuite-*")
-	assert.Nil(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	var output bytes.Buffer
-	err = GenerateCertificates(&output, "testdata/certs-test-all-fields.yaml", path.Join(dir, "state.yaml"), dir)
+	err := GenerateCertificates(&output, "testdata/certs-test-all-fields.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.Nil(t, err)
 
 	// Check fields from first end-entity cert.
@@ -257,12 +245,10 @@ func TestParsingAllCertificateFields(t *testing.T) {
 }
 
 func TestRevocation(t *testing.T) {
-	dir, err := os.MkdirTemp("/tmp", "certyaml-unittest")
-	assert.Nil(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	var output bytes.Buffer
-	err = GenerateCertificates(&output, "testdata/certs-revocation.yaml", path.Join(dir, "state.yaml"), dir)
+	err := GenerateCertificates(&output, "testdata/certs-revocation.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.Nil(t, err)
 
 	crlFile := path.Join(dir, "ca1-crl.pem")
@@ -294,11 +280,9 @@ func TestRevocation(t *testing.T) {
 }
 
 func TestInvalidRevocation(t *testing.T) {
-	dir, err := os.MkdirTemp("", "certyaml-testsuite-*")
-	assert.Nil(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 	var output bytes.Buffer
-	err = GenerateCertificates(&output, "testdata/cert-invalid-revoke-self-signed.yaml", path.Join(dir, "state.yaml"), dir)
+	err := GenerateCertificates(&output, "testdata/cert-invalid-revoke-self-signed.yaml", path.Join(dir, "state.yaml"), dir)
 	assert.NotNil(t, err)
 }
 
