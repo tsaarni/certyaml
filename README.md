@@ -40,6 +40,8 @@ in current directory.
         Short for --destination
   -destination string
         Destination directory where to create the certificates and keys
+  -help-yaml
+        Print certs.yaml field reference and exit
 ```
 
 ### Installing

@@ -30,6 +30,7 @@ const defaultManifest = "certs.yaml"
 func main() {
 	// destination directory for writing the created files
 	var destination string
+	var showYAMLHelp bool
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [-d destination] [certs.yaml]\n\n", os.Args[0])
@@ -41,7 +42,13 @@ func main() {
 
 	flag.StringVar(&destination, "d", "", "Short for --destination")
 	flag.StringVar(&destination, "destination", "", "Destination directory where to create the certificates and keys")
+	flag.BoolVar(&showYAMLHelp, "help-yaml", false, "Print certs.yaml field reference and exit")
 	flag.Parse()
+
+	if showYAMLHelp {
+		printFieldReference(os.Stdout)
+		return
+	}
 
 	manifestFile := defaultManifest
 	if flag.Arg(0) != "" {

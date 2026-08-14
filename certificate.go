@@ -44,11 +44,11 @@ import (
 type Certificate struct {
 	// Subject defines the distinguished name for the certificate.
 	// Example: CN=Joe.
-	Subject string `json:"subject"`
+	Subject string `json:"subject" jsonschema:"required,description=Distinguished name for the certificate,example=CN=Joe"`
 
 	// SubjectAltNames defines an optional list of values for x509 Subject Alternative Name extension.
 	// Examples: DNS:www.example.com, IP:1.2.3.4, URI:https://www.example.com, email:user@example.com.
-	SubjectAltNames []string `json:"sans"`
+	SubjectAltNames []string `json:"sans" jsonschema:"description=Subject Alternative Name entries,example=DNS:www.example.com,example=IP:1.2.3.4,example=URI:https://www.example.com,example=email:user@example.com"`
 
 	// KeyType defines the certificate key algorithm.
 	// Default value is KeyTypeEC (elliptic curve) if KeyType is undefined (when value is 0).
@@ -57,7 +57,7 @@ type Certificate struct {
 	// KeySize defines the key length in bits.
 	// Default value is 256 (EC) or 2048 (RSA) if KeySize is undefined (when value is 0).
 	// Examples: For key_type EC: 256, 384, 521. For key_type RSA: 1024, 2048, 4096. For key_type ED25519: 256.
-	KeySize int `json:"key_size"`
+	KeySize int `json:"key_size" jsonschema:"description=Key length in bits,default=256 (EC) / 2048 (RSA),example=256,example=384,example=521,example=2048,example=4096"`
 
 	// Expires automatically defines certificate's NotAfter field by adding duration defined in Expires to the current time.
 	// Default value is 8760h (one year) if Expires is undefined (when value is nil).
@@ -80,15 +80,15 @@ type Certificate struct {
 
 	// IsCA defines if certificate is / is not CA.
 	// If IsCA is undefined (when value is nil), true is set by default for self-signed certificates (Issuer is nil).
-	IsCA *bool `json:"ca"`
+	IsCA *bool `json:"ca" jsonschema:"description=Whether certificate is CA,default=true for self-signed certificates"`
 
 	// NotBefore defines certificate not to be valid before this time.
 	// Default value is current time if NotBefore is undefined (when value is nil).
-	NotBefore *time.Time `json:"not_before"`
+	NotBefore *time.Time `json:"not_before" jsonschema:"description=Certificate validity start (RFC3339),default=current time,example=2020-01-01T09:00:00Z"`
 
 	// NotAfter defines certificate not to be valid after this time.
 	// Default value is current time +  Expires if NotAfter is undefined (when value is nil)
-	NotAfter *time.Time `json:"not_after"`
+	NotAfter *time.Time `json:"not_after" jsonschema:"description=Certificate validity end (RFC3339). Takes precedence over Expires,example=2020-02-01T10:10:10Z"`
 
 	// SerialNumber defines serial number for the certificate.
 	// If not set, the default value is current time in nanoseconds.
@@ -96,11 +96,11 @@ type Certificate struct {
 
 	// CRLDistributionPoint defines the URI for downloading the CRL for this certificate.
 	// Not set by default.
-	CRLDistributionPoints []string `json:"crl_distribution_points"`
+	CRLDistributionPoints []string `json:"crl_distribution_points" jsonschema:"description=URLs for X509 CRL Distribution Points extension,example=http://example.com/crl.pem"`
 
 	// OCSP defines the URL of the OCSP responder for this certificate.
 	// Not set by default.
-	OCSP []string `json:"ocsp"`
+	OCSP []string `json:"ocsp" jsonschema:"description=OCSP responder URLs (Authority Information Access),example=http://ocsp.example.com"`
 
 	// ExtraExtensions defines additional x509 extensions to include in the certificate.
 	// Not set by default.
