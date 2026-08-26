@@ -29,7 +29,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"path/filepath"
 	"sort"
 	"testing"
 	"time"
@@ -292,12 +291,13 @@ func TestInvalidRevocation(t *testing.T) {
 func dirHash(dir string) (string, error) {
 	hash := sha256.New()
 
-	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+	dirFS := os.DirFS(dir)
+	err := fs.WalkDir(dirFS, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if !d.IsDir() {
-			buf, err := os.ReadFile(path)
+			buf, err := fs.ReadFile(dirFS, path)
 			if err != nil {
 				return err
 			}
