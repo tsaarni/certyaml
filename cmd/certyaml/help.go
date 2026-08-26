@@ -82,7 +82,7 @@ func typeName(t reflect.Type) string {
 	switch t.Kind() {
 	case reflect.Slice:
 		return "[]" + typeName(t.Elem())
-	case reflect.Ptr:
+	case reflect.Pointer:
 		return typeName(t.Elem())
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return "integer"

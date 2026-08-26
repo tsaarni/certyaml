@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
 	"math/big"
@@ -89,7 +88,7 @@ func (crl *CRL) DER() (crlBytes []byte, err error) {
 		effectiveExpiry = *crl.NextUpdate
 	}
 
-	var revokedCerts []pkix.RevokedCertificate
+	var revokedCerts []x509.RevocationListEntry
 	for _, c := range crl.Revoked {
 		err := c.ensureGenerated()
 		if err != nil {
@@ -100,7 +99,7 @@ func (crl *CRL) DER() (crlBytes []byte, err error) {
 		} else if c.Issuer != crl.Issuer {
 			return nil, fmt.Errorf("revoked certificates added from several issuers, or certificate does not match explicitly set Issuer")
 		}
-		revokedCerts = append(revokedCerts, pkix.RevokedCertificate{
+		revokedCerts = append(revokedCerts, x509.RevocationListEntry{
 			SerialNumber:   c.SerialNumber,
 			RevocationTime: effectiveRevocationTime,
 		})
@@ -117,10 +116,10 @@ func (crl *CRL) DER() (crlBytes []byte, err error) {
 	}
 
 	template := &x509.RevocationList{
-		Number:              big.NewInt(0),
-		ThisUpdate:          effectiveRevocationTime,
-		NextUpdate:          effectiveExpiry,
-		RevokedCertificates: revokedCerts,
+		Number:                    big.NewInt(0),
+		ThisUpdate:                effectiveRevocationTime,
+		NextUpdate:                effectiveExpiry,
+		RevokedCertificateEntries: revokedCerts,
 	}
 
 	return x509.CreateRevocationList(rand.Reader, template, &ca, privateKey)

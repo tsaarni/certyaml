@@ -444,9 +444,15 @@ func (c *Certificate) Generate() error {
 		return nil
 	}
 
+	leaf, err := x509.ParseCertificate(cert)
+	if err != nil {
+		return err
+	}
+
 	c.GeneratedCert = &tls.Certificate{
 		Certificate: append([][]byte{cert}, chain...),
 		PrivateKey:  key,
+		Leaf:        leaf,
 	}
 
 	return nil
