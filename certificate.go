@@ -20,6 +20,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -54,10 +55,9 @@ type Certificate struct {
 	// Default value is KeyTypeEC (elliptic curve) if KeyType is undefined (when value is 0).
 	KeyType KeyType `json:"-"`
 
-	// KeySize defines the key length in bits.
-	// Default value is 256 (EC) or 2048 (RSA) if KeySize is undefined (when value is 0).
-	// Examples: For key_type EC: 256, 384, 521. For key_type RSA: 1024, 2048, 4096. For key_type ED25519: 256.
-	KeySize int `json:"key_size" jsonschema:"description=Key length in bits,default=256 (EC) / 2048 (RSA),example=256,example=384,example=521,example=2048,example=4096"`
+	// KeySize defines the key size for EC or RSA.
+	// Not used for Ed25519 or ML-DSA.
+	KeySize int `json:"key_size" jsonschema:"description=Key size for EC or RSA. Not used for Ed25519 or ML-DSA,default=256 (EC) / 2048 (RSA),example=EC: 256/384/521; RSA: 1024/2048/4096"`
 
 	// Expires automatically defines certificate's NotAfter field by adding duration defined in Expires to the current time.
 	// Default value is 8760h (one year) if Expires is undefined (when value is nil).
@@ -67,7 +67,8 @@ type Certificate struct {
 	// KeyUsage defines bitmap of values for x509 key usage extension.
 	// If KeyUsage is undefined (when value is 0),
 	// CertSign and CRLSign are set for CA certificates,
-	// KeyEncipherment and DigitalSignature are set for end-entity certificates.
+	// For EC, RSA and Ed25519, KeyEncipherment and DigitalSignature are set for end-entity certificates.
+	// For ML-DSA, DigitalSignature is set for end-entity certificates.
 	KeyUsage x509.KeyUsage `json:"-"`
 
 	// ExtKeyUsage defines a sequence of x509 extended key usages.
@@ -121,6 +122,9 @@ const (
 	KeyTypeEC = iota
 	KeyTypeRSA
 	KeyTypeEd25519
+	KeyTypeMLDSA44
+	KeyTypeMLDSA65
+	KeyTypeMLDSA87
 )
 
 // TLSCertificate returns the Certificate as tls.Certificate.
@@ -283,7 +287,12 @@ func (c *Certificate) defaults() error {
 		if *c.IsCA {
 			c.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
 		} else {
-			c.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
+			switch c.KeyType {
+			case KeyTypeMLDSA44, KeyTypeMLDSA65, KeyTypeMLDSA87:
+				c.KeyUsage = x509.KeyUsageDigitalSignature
+			default:
+				c.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
+			}
 		}
 	}
 
@@ -351,6 +360,21 @@ func (c *Certificate) Generate() error {
 			return fmt.Errorf("invalid Ed25519 key size: %d (valid: 256)", c.KeySize)
 		}
 		_, key, err = ed25519.GenerateKey(rand.Reader)
+	case KeyTypeMLDSA44:
+		if c.KeySize != 0 {
+			return fmt.Errorf("key size is not used for ML-DSA")
+		}
+		key, err = mldsa.GenerateKey(mldsa.MLDSA44())
+	case KeyTypeMLDSA65:
+		if c.KeySize != 0 {
+			return fmt.Errorf("key size is not used for ML-DSA")
+		}
+		key, err = mldsa.GenerateKey(mldsa.MLDSA65())
+	case KeyTypeMLDSA87:
+		if c.KeySize != 0 {
+			return fmt.Errorf("key size is not used for ML-DSA")
+		}
+		key, err = mldsa.GenerateKey(mldsa.MLDSA87())
 	}
 	if err != nil {
 		return err
@@ -457,7 +481,6 @@ func (c *Certificate) Generate() error {
 
 	return nil
 }
-
 func encodeToPEMBlocks(blockType string, blocks [][]byte) ([]byte, error) {
 	var buf bytes.Buffer
 

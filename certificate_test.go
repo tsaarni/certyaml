@@ -17,6 +17,7 @@ package certyaml
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
@@ -32,6 +33,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSubjectName(t *testing.T) {
@@ -84,6 +86,23 @@ func TestRsaKeySize(t *testing.T) {
 	got, err = input.PublicKey()
 	assert.Nil(t, err)
 	assert.Equal(t, 4096, got.(*rsa.PublicKey).Size()*8)
+}
+
+func TestMLDSAKeyType(t *testing.T) {
+	input := Certificate{Subject: "CN=Joe", KeyType: KeyTypeMLDSA44}
+	got, err := input.PublicKey()
+	require.NoError(t, err)
+	assert.Equal(t, mldsa.MLDSA44(), got.(*mldsa.PublicKey).Parameters())
+
+	input = Certificate{Subject: "CN=Joe", KeyType: KeyTypeMLDSA65}
+	got, err = input.PublicKey()
+	require.NoError(t, err)
+	assert.Equal(t, mldsa.MLDSA65(), got.(*mldsa.PublicKey).Parameters())
+
+	input = Certificate{Subject: "CN=Joe", KeyType: KeyTypeMLDSA87}
+	got, err = input.PublicKey()
+	require.NoError(t, err)
+	assert.Equal(t, mldsa.MLDSA87(), got.(*mldsa.PublicKey).Parameters())
 }
 
 func TestExpires(t *testing.T) {
@@ -154,6 +173,12 @@ func TestIsCa(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, x509.KeyUsageDigitalSignature|x509.KeyUsageKeyEncipherment, got.KeyUsage)
 	assert.Equal(t, false, got.IsCA)
+
+	input4 := Certificate{Subject: "CN=MLDSAEndEntity", KeyType: KeyTypeMLDSA44, Issuer: &input2}
+	got, err = input4.X509Certificate()
+	assert.Nil(t, err)
+	assert.Equal(t, x509.KeyUsageDigitalSignature, got.KeyUsage)
+	assert.Equal(t, false, got.IsCA)
 }
 
 func TestNotBeforeAndNotAfter(t *testing.T) {
@@ -213,6 +238,18 @@ func TestInvalidKeySize(t *testing.T) {
 	input = Certificate{Subject: "CN=Joe", KeyType: KeyTypeEd25519, KeySize: 1}
 	_, err = input.X509Certificate()
 	assert.NotNil(t, err)
+
+	input = Certificate{Subject: "CN=Joe", KeyType: KeyTypeMLDSA44, KeySize: 44}
+	_, err = input.X509Certificate()
+	assert.EqualError(t, err, "key size is not used for ML-DSA")
+
+	input = Certificate{Subject: "CN=Joe", KeyType: KeyTypeMLDSA65, KeySize: 65}
+	_, err = input.X509Certificate()
+	assert.EqualError(t, err, "key size is not used for ML-DSA")
+
+	input = Certificate{Subject: "CN=Joe", KeyType: KeyTypeMLDSA87, KeySize: 87}
+	_, err = input.X509Certificate()
+	assert.EqualError(t, err, "key size is not used for ML-DSA")
 }
 
 func TestPEM(t *testing.T) {

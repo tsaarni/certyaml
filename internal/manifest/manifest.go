@@ -50,8 +50,8 @@ type Manifest struct {
 type CertificateManifest struct {
 	api.Certificate
 
-	KeyTypeAsString      string   `json:"key_type" jsonschema:"description=Certificate key algorithm,default=EC,enum=EC,enum=RSA,enum=ED25519"`
-	KeyUsagesAsString    []string `json:"key_usages" jsonschema:"description=Key usage extension values,default=CertSign+CRLSign (CA) / KeyEncipherment+DigitalSignature (end-entity),enum=DigitalSignature,enum=ContentCommitment,enum=KeyEncipherment,enum=DataEncipherment,enum=KeyAgreement,enum=CertSign,enum=CRLSign,enum=EncipherOnly,enum=DecipherOnly"`
+	KeyTypeAsString      string   `json:"key_type" jsonschema:"description=Certificate key algorithm,default=EC,enum=EC,enum=RSA,enum=ED25519,enum=MLDSA44,enum=MLDSA65,enum=MLDSA87"`
+	KeyUsagesAsString    []string `json:"key_usages" jsonschema:"description=Key usage extension values,default=CertSign+CRLSign for CAs; DigitalSignature for ML-DSA end-entity certificates; KeyEncipherment+DigitalSignature for other end-entity certificates,enum=DigitalSignature,enum=ContentCommitment,enum=KeyEncipherment,enum=DataEncipherment,enum=KeyAgreement,enum=CertSign,enum=CRLSign,enum=EncipherOnly,enum=DecipherOnly"`
 	ExtKeyUsagesAsString []string `json:"ext_key_usages" jsonschema:"description=Extended key usage extension values,enum=Any,enum=ServerAuth,enum=ClientAuth,enum=CodeSigning,enum=EmailProtection,enum=IPSECEndSystem,enum=IPSECTunnel,enum=IPSECUser,enum=TimeStamping,enum=OCSPSigning,enum=MicrosoftServerGatedCrypto,enum=NetscapeServerGatedCrypto,enum=MicrosoftCommercialCodeSigning,enum=MicrosoftKernelCodeSigning"`
 	ExpiresAsString      string   `json:"expires" jsonschema:"description=Certificate lifetime as Go duration. Overridden by not_after,default=8760h,example=1s,example=10m,example=1h,example=8760h"`
 	IssuerAsString       string   `json:"issuer" jsonschema:"description=Subject of issuing CA (must appear earlier in manifest). Self-signed if omitted,example=CN=myca"`
@@ -221,6 +221,12 @@ func (m *Manifest) processCertificate(c *CertificateManifest) error {
 			c.KeyType = api.KeyTypeRSA
 		case "ED25519":
 			c.KeyType = api.KeyTypeEd25519
+		case "MLDSA44":
+			c.KeyType = api.KeyTypeMLDSA44
+		case "MLDSA65":
+			c.KeyType = api.KeyTypeMLDSA65
+		case "MLDSA87":
+			c.KeyType = api.KeyTypeMLDSA87
 		default:
 			return fmt.Errorf("key_type contains invalid value: %s", c.KeyTypeAsString)
 		}

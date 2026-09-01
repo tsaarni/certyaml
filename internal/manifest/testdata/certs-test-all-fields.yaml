@@ -50,3 +50,10 @@ serial: 123
 ---
 subject: cn=ed25519-cert
 key_type: ED25519
+---
+subject: cn=mldsa-ca
+key_type: MLDSA44
+---
+subject: cn=mldsa-cert
+issuer: cn=mldsa-ca
+key_type: MLDSA65
