@@ -234,15 +234,27 @@ func TestParsingAllCertificateFields(t *testing.T) {
 
 	assert.Equal(t, big.NewInt(123), got.SerialNumber)
 
-	// Check fields Ee25519  end-entity cert.
+	// Check fields Ed25519 ca cert.
+	tlsCert, err = tls.LoadX509KeyPair(path.Join(dir, "ed25519-ca.pem"), path.Join(dir, "ed25519-ca-key.pem"))
+	require.NoError(t, err)
+	got, err = x509.ParseCertificate(tlsCert.Certificate[0])
+	require.NoError(t, err)
+
+	assert.Equal(t, "ed25519-ca", got.Issuer.CommonName)
+	assert.Equal(t, "ed25519-ca", got.Subject.CommonName)
+	assert.Equal(t, x509.Ed25519, got.PublicKeyAlgorithm)
+	assert.Equal(t, x509.KeyUsageCertSign|x509.KeyUsageCRLSign, got.KeyUsage)
+
+	// Check fields Ed25519 end-entity cert.
 	tlsCert, err = tls.LoadX509KeyPair(path.Join(dir, "ed25519-cert.pem"), path.Join(dir, "ed25519-cert-key.pem"))
 	require.NoError(t, err)
 	got, err = x509.ParseCertificate(tlsCert.Certificate[0])
 	require.NoError(t, err)
 
-	assert.Equal(t, "ed25519-cert", got.Issuer.CommonName)
+	assert.Equal(t, "ed25519-ca", got.Issuer.CommonName)
 	assert.Equal(t, "ed25519-cert", got.Subject.CommonName)
 	assert.Equal(t, x509.Ed25519, got.PublicKeyAlgorithm)
+	assert.Equal(t, x509.KeyUsageDigitalSignature, got.KeyUsage)
 
 	// Check fields ML-DSA ca cert.
 	tlsCert, err = tls.LoadX509KeyPair(path.Join(dir, "mldsa-ca.pem"), path.Join(dir, "mldsa-ca-key.pem"))
