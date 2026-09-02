@@ -323,6 +323,34 @@ func TestInvalidRevocation(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestCaseInsensitiveFields(t *testing.T) {
+	dir := t.TempDir()
+
+	// Lowercase key_type, key_usages and ext_key_usages should be accepted.
+	var output bytes.Buffer
+	err := GenerateCertificates(&output, "testdata/certs-case-insensitive.yaml", path.Join(dir, "state.yaml"), dir)
+	require.NoError(t, err)
+
+	tlsCert, err := tls.LoadX509KeyPair(path.Join(dir, "server.pem"), path.Join(dir, "server-key.pem"))
+	require.NoError(t, err)
+	got, err := x509.ParseCertificate(tlsCert.Certificate[0])
+	require.NoError(t, err)
+
+	assert.Equal(t, x509.KeyUsageDigitalSignature|x509.KeyUsageKeyEncipherment, got.KeyUsage)
+	assert.Equal(t, []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}, got.ExtKeyUsage)
+	assert.Equal(t, x509.RSA, got.PublicKeyAlgorithm)
+
+	// Error messages should preserve the user-provided case.
+	err = GenerateCertificates(&output, "testdata/certs-invalid-key-type.yaml", path.Join(dir, "state.yaml"), dir)
+	assert.EqualError(t, err, "key_type contains invalid value: myInvalidType")
+
+	err = GenerateCertificates(&output, "testdata/certs-invalid-key-usage.yaml", path.Join(dir, "state.yaml"), dir)
+	assert.EqualError(t, err, "key_usages contains invalid value: MyInvalidUsage")
+
+	err = GenerateCertificates(&output, "testdata/certs-invalid-ext-key-usage.yaml", path.Join(dir, "state.yaml"), dir)
+	assert.EqualError(t, err, "ext_key_usages contains invalid value: MyInvalidExtUsage")
+}
+
 // Helpers
 
 // dirHash returns a hash of all files in a directory.

@@ -1,0 +1,3 @@
+subject: cn=bad
+ext_key_usages:
+  - MyInvalidExtUsage
