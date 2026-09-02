@@ -26,6 +26,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/cnf/structhash"
@@ -214,7 +215,7 @@ func (m *Manifest) processCertificate(c *CertificateManifest) error {
 	}
 
 	if c.KeyTypeAsString != "" {
-		switch c.KeyTypeAsString {
+		switch strings.ToUpper(c.KeyTypeAsString) {
 		case "EC":
 			c.KeyType = api.KeyTypeEC
 		case "RSA":
@@ -230,6 +231,8 @@ func (m *Manifest) processCertificate(c *CertificateManifest) error {
 		default:
 			return fmt.Errorf("key_type contains invalid value: %s", c.KeyTypeAsString)
 		}
+		// Normalize for stable case-insensitive hashing.
+		c.KeyTypeAsString = strings.ToUpper(c.KeyTypeAsString)
 	}
 
 	if len(c.KeyUsagesAsString) > 0 {
@@ -238,6 +241,10 @@ func (m *Manifest) processCertificate(c *CertificateManifest) error {
 			return err
 		}
 		c.KeyUsage = usage
+		// Normalize for stable case-insensitive hashing.
+		for i, s := range c.KeyUsagesAsString {
+			c.KeyUsagesAsString[i] = strings.ToLower(s)
+		}
 	}
 
 	if len(c.ExtKeyUsagesAsString) > 0 {
@@ -246,6 +253,10 @@ func (m *Manifest) processCertificate(c *CertificateManifest) error {
 			return err
 		}
 		c.ExtKeyUsage = usage
+		// Normalize for stable case-insensitive hashing.
+		for i, s := range c.ExtKeyUsagesAsString {
+			c.ExtKeyUsagesAsString[i] = strings.ToLower(s)
+		}
 	}
 
 	if c.SerialNumberAsInt != nil {
@@ -281,19 +292,19 @@ func splitByDocument(data []byte, atEOF bool) (advance int, token []byte, err er
 func getKeyUsage(keyUsage []string) (x509.KeyUsage, error) {
 	var result x509.KeyUsage
 	var usages = map[string]x509.KeyUsage{
-		"DigitalSignature":  x509.KeyUsageDigitalSignature,
-		"ContentCommitment": x509.KeyUsageContentCommitment,
-		"KeyEncipherment":   x509.KeyUsageKeyEncipherment,
-		"DataEncipherment":  x509.KeyUsageDataEncipherment,
-		"KeyAgreement":      x509.KeyUsageKeyAgreement,
-		"CertSign":          x509.KeyUsageCertSign,
-		"CRLSign":           x509.KeyUsageCRLSign,
-		"EncipherOnly":      x509.KeyUsageEncipherOnly,
-		"DecipherOnly":      x509.KeyUsageDecipherOnly,
+		"digitalsignature":  x509.KeyUsageDigitalSignature,
+		"contentcommitment": x509.KeyUsageContentCommitment,
+		"keyencipherment":   x509.KeyUsageKeyEncipherment,
+		"dataencipherment":  x509.KeyUsageDataEncipherment,
+		"keyagreement":      x509.KeyUsageKeyAgreement,
+		"certsign":          x509.KeyUsageCertSign,
+		"crlsign":           x509.KeyUsageCRLSign,
+		"encipheronly":      x509.KeyUsageEncipherOnly,
+		"decipheronly":      x509.KeyUsageDecipherOnly,
 	}
 
 	for _, usage := range keyUsage {
-		ku, ok := usages[usage]
+		ku, ok := usages[strings.ToLower(usage)]
 		if !ok {
 			return result, fmt.Errorf("key_usages contains invalid value: %s", usage)
 		}
@@ -307,24 +318,24 @@ func getKeyUsage(keyUsage []string) (x509.KeyUsage, error) {
 func getExtKeyUsage(extKeyUsage []string) ([]x509.ExtKeyUsage, error) {
 	var result []x509.ExtKeyUsage
 	var usages = map[string]x509.ExtKeyUsage{
-		"Any":                            x509.ExtKeyUsageAny,
-		"ServerAuth":                     x509.ExtKeyUsageServerAuth,
-		"ClientAuth":                     x509.ExtKeyUsageClientAuth,
-		"CodeSigning":                    x509.ExtKeyUsageCodeSigning,
-		"EmailProtection":                x509.ExtKeyUsageEmailProtection,
-		"IPSECEndSystem":                 x509.ExtKeyUsageIPSECEndSystem,
-		"IPSECTunnel":                    x509.ExtKeyUsageIPSECTunnel,
-		"IPSECUser":                      x509.ExtKeyUsageIPSECUser,
-		"TimeStamping":                   x509.ExtKeyUsageTimeStamping,
-		"OCSPSigning":                    x509.ExtKeyUsageOCSPSigning,
-		"MicrosoftServerGatedCrypto":     x509.ExtKeyUsageMicrosoftServerGatedCrypto,
-		"NetscapeServerGatedCrypto":      x509.ExtKeyUsageNetscapeServerGatedCrypto,
-		"MicrosoftCommercialCodeSigning": x509.ExtKeyUsageMicrosoftCommercialCodeSigning,
-		"MicrosoftKernelCodeSigning":     x509.ExtKeyUsageMicrosoftKernelCodeSigning,
+		"any":                            x509.ExtKeyUsageAny,
+		"serverauth":                     x509.ExtKeyUsageServerAuth,
+		"clientauth":                     x509.ExtKeyUsageClientAuth,
+		"codesigning":                    x509.ExtKeyUsageCodeSigning,
+		"emailprotection":                x509.ExtKeyUsageEmailProtection,
+		"ipsecendsystem":                 x509.ExtKeyUsageIPSECEndSystem,
+		"ipsectunnel":                    x509.ExtKeyUsageIPSECTunnel,
+		"ipsecuser":                      x509.ExtKeyUsageIPSECUser,
+		"timestamping":                   x509.ExtKeyUsageTimeStamping,
+		"ocspsigning":                    x509.ExtKeyUsageOCSPSigning,
+		"microsoftservergatedcrypto":     x509.ExtKeyUsageMicrosoftServerGatedCrypto,
+		"netscapeservergatedcrypto":      x509.ExtKeyUsageNetscapeServerGatedCrypto,
+		"microsoftcommercialcodesigning": x509.ExtKeyUsageMicrosoftCommercialCodeSigning,
+		"microsoftkernelcodesigning":     x509.ExtKeyUsageMicrosoftKernelCodeSigning,
 	}
 
 	for _, usage := range extKeyUsage {
-		ku, ok := usages[usage]
+		ku, ok := usages[strings.ToLower(usage)]
 		if !ok {
 			return nil, fmt.Errorf("ext_key_usages contains invalid value: %s", usage)
 		}

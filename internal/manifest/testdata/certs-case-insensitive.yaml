@@ -1,0 +1,10 @@
+subject: cn=ca
+---
+subject: cn=server
+issuer: cn=ca
+key_type: rsa
+key_usages:
+  - digitalsignature
+  - keyencipherment
+ext_key_usages:
+  - serverauth
