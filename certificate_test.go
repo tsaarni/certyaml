@@ -179,6 +179,12 @@ func TestIsCa(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, x509.KeyUsageDigitalSignature, got.KeyUsage)
 	assert.Equal(t, false, got.IsCA)
+
+	input5 := Certificate{Subject: "CN=ED25519EndEntity", KeyType: KeyTypeEd25519, Issuer: &input2}
+	got, err = input5.X509Certificate()
+	assert.Nil(t, err)
+	assert.Equal(t, x509.KeyUsageDigitalSignature, got.KeyUsage)
+	assert.Equal(t, false, got.IsCA)
 }
 
 func TestNotBeforeAndNotAfter(t *testing.T) {

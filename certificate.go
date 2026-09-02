@@ -67,8 +67,8 @@ type Certificate struct {
 	// KeyUsage defines bitmap of values for x509 key usage extension.
 	// If KeyUsage is undefined (when value is 0),
 	// CertSign and CRLSign are set for CA certificates,
-	// For EC, RSA and Ed25519, KeyEncipherment and DigitalSignature are set for end-entity certificates.
-	// For ML-DSA, DigitalSignature is set for end-entity certificates.
+	// For EC and RSA, KeyEncipherment and DigitalSignature are set for end-entity certificates.
+	// For Ed25519 and ML-DSA, DigitalSignature is set for end-entity certificates.
 	KeyUsage x509.KeyUsage `json:"-"`
 
 	// ExtKeyUsage defines a sequence of x509 extended key usages.
@@ -288,7 +288,7 @@ func (c *Certificate) defaults() error {
 			c.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
 		} else {
 			switch c.KeyType {
-			case KeyTypeMLDSA44, KeyTypeMLDSA65, KeyTypeMLDSA87:
+			case KeyTypeEd25519, KeyTypeMLDSA44, KeyTypeMLDSA65, KeyTypeMLDSA87:
 				c.KeyUsage = x509.KeyUsageDigitalSignature
 			default:
 				c.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature

@@ -48,7 +48,11 @@ not_before: 2020-01-01T09:00:00Z
 expires: 1h
 serial: 123
 ---
+subject: cn=ed25519-ca
+key_type: ED25519
+---
 subject: cn=ed25519-cert
+issuer: cn=ed25519-ca
 key_type: ED25519
 ---
 subject: cn=mldsa-ca
