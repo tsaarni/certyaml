@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/tls"
@@ -34,6 +35,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestManifestHandling(t *testing.T) {
@@ -41,7 +43,7 @@ func TestManifestHandling(t *testing.T) {
 
 	var output bytes.Buffer
 	err := GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	wantFiles := []string{
 		"client-root-ca-key.pem",
@@ -67,7 +69,7 @@ func TestManifestHandling(t *testing.T) {
 
 	// Check that files got generated.
 	dirEntries, err := os.ReadDir(dir)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	var gotFiles []string
 	for _, file := range dirEntries {
 		gotFiles = append(gotFiles, file.Name())
@@ -81,34 +83,34 @@ func TestStateHandling(t *testing.T) {
 
 	var output bytes.Buffer
 	err := GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	// Check stable hashing: calling generate again on same manifest does not alter the state.
 	h1, err := dirHash(dir)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	h2, err := dirHash(dir)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, h1, h2)
 
 	// Check that files are re-generated if some are missing.
 	os.Remove(path.Join(dir, "intermediate-ca-key.pem"))
 	os.Remove(path.Join(dir, "intermediate-ca.pem"))
 	err = GenerateCertificates(&output, "testdata/certs-state-1.yaml", path.Join(dir, "state.yaml"), dir)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	h3, err := dirHash(dir)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotEqual(t, h2, h3)
 
 	// Check that files are re-generated if manifest changes.
 	err = GenerateCertificates(&output, "testdata/certs-state-2.yaml", path.Join(dir, "state.yaml"), dir)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	h4, err := dirHash(dir)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotEqual(t, h3, h4)
 }
 
@@ -145,13 +147,13 @@ func TestParsingAllCertificateFields(t *testing.T) {
 
 	var output bytes.Buffer
 	err := GenerateCertificates(&output, "testdata/certs-test-all-fields.yaml", path.Join(dir, "state.yaml"), dir)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	// Check fields from first end-entity cert.
 	tlsCert, err := tls.LoadX509KeyPair(path.Join(dir, "rsa-cert.pem"), path.Join(dir, "rsa-cert-key.pem"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	got, err := x509.ParseCertificate(tlsCert.Certificate[0])
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "ca", got.Issuer.CommonName)
 	assert.Equal(t, "rsa-cert", got.Subject.CommonName)
@@ -207,9 +209,9 @@ func TestParsingAllCertificateFields(t *testing.T) {
 
 	// Check fields from second end-entity cert.
 	tlsCert, err = tls.LoadX509KeyPair(path.Join(dir, "ec-cert.pem"), path.Join(dir, "ec-cert-key.pem"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	got, err = x509.ParseCertificate(tlsCert.Certificate[0])
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "ec-cert", got.Issuer.CommonName)
 	assert.Equal(t, "ec-cert", got.Subject.CommonName)
@@ -234,13 +236,37 @@ func TestParsingAllCertificateFields(t *testing.T) {
 
 	// Check fields Ee25519  end-entity cert.
 	tlsCert, err = tls.LoadX509KeyPair(path.Join(dir, "ed25519-cert.pem"), path.Join(dir, "ed25519-cert-key.pem"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	got, err = x509.ParseCertificate(tlsCert.Certificate[0])
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "ed25519-cert", got.Issuer.CommonName)
 	assert.Equal(t, "ed25519-cert", got.Subject.CommonName)
 	assert.Equal(t, x509.Ed25519, got.PublicKeyAlgorithm)
+
+	// Check fields ML-DSA ca cert.
+	tlsCert, err = tls.LoadX509KeyPair(path.Join(dir, "mldsa-ca.pem"), path.Join(dir, "mldsa-ca-key.pem"))
+	require.NoError(t, err)
+	got, err = x509.ParseCertificate(tlsCert.Certificate[0])
+	require.NoError(t, err)
+
+	assert.Equal(t, "mldsa-ca", got.Issuer.CommonName)
+	assert.Equal(t, "mldsa-ca", got.Subject.CommonName)
+	assert.Equal(t, x509.MLDSA, got.PublicKeyAlgorithm)
+	assert.Equal(t, mldsa.MLDSA44(), got.PublicKey.(*mldsa.PublicKey).Parameters())
+	assert.Equal(t, x509.KeyUsageCertSign|x509.KeyUsageCRLSign, got.KeyUsage)
+
+	// Check fields ML-DSA end-entity cert.
+	tlsCert, err = tls.LoadX509KeyPair(path.Join(dir, "mldsa-cert.pem"), path.Join(dir, "mldsa-cert-key.pem"))
+	require.NoError(t, err)
+	got, err = x509.ParseCertificate(tlsCert.Certificate[0])
+	require.NoError(t, err)
+
+	assert.Equal(t, "mldsa-ca", got.Issuer.CommonName)
+	assert.Equal(t, "mldsa-cert", got.Subject.CommonName)
+	assert.Equal(t, x509.MLDSA, got.PublicKeyAlgorithm)
+	assert.Equal(t, mldsa.MLDSA65(), got.PublicKey.(*mldsa.PublicKey).Parameters())
+	assert.Equal(t, x509.KeyUsageDigitalSignature, got.KeyUsage)
 }
 
 func TestRevocation(t *testing.T) {
@@ -248,30 +274,30 @@ func TestRevocation(t *testing.T) {
 
 	var output bytes.Buffer
 	err := GenerateCertificates(&output, "testdata/certs-revocation.yaml", path.Join(dir, "state.yaml"), dir)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	crlFile := path.Join(dir, "ca1-crl.pem")
 	pemBuffer, err := os.ReadFile(crlFile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	block, rest := pem.Decode(pemBuffer)
-	assert.NotNil(t, block)
+	require.NotNil(t, block)
 	assert.Equal(t, "X509 CRL", block.Type)
 	assert.Empty(t, rest)
 	certList, err := x509.ParseRevocationList(block.Bytes)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "CN=ca1", certList.Issuer.String())
 	assert.Equal(t, 1, len(certList.RevokedCertificateEntries))
 	assert.Equal(t, big.NewInt(123), certList.RevokedCertificateEntries[0].SerialNumber)
 
 	crlFile = path.Join(dir, "ca2-crl.pem")
 	pemBuffer, err = os.ReadFile(crlFile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	block, rest = pem.Decode(pemBuffer)
-	assert.NotNil(t, block)
+	require.NotNil(t, block)
 	assert.Equal(t, "X509 CRL", block.Type)
 	assert.Empty(t, rest)
 	certList, err = x509.ParseRevocationList(block.Bytes)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "CN=ca2", certList.Issuer.String())
 	assert.Equal(t, 2, len(certList.RevokedCertificateEntries))
 	assert.Equal(t, big.NewInt(123), certList.RevokedCertificateEntries[0].SerialNumber)
